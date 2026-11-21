@@ -62,26 +62,27 @@ Bottom tabs: **Collection** (home), **Scan** (large center button), **Profile**.
 
 ```
 Expo (SDK 58, Expo Router, TypeScript)          Supabase
-┌───────────────────────────────┐               ┌──────────────────────────────────────┐
-│ src/app       screens         │  auth         │ Auth (email + password)              │
-│ src/lib/api   reads own rows ─┼──────────────▶│ Postgres + RLS (read own rows only)  │
-│ submitScan(payload) ──────────┼──────────────▶│ Edge Function `scan`                 │
-└───────────────────────────────┘               │   validate code → rollPet() →        │
-        ▲ imports @game/catalog                 │   rpc record_scan (atomic cooldown + │
-        └──── supabase/functions/_shared/game ──┤   insert + upsert)                   │
-                                                └──────────────────────────────────────┘
+┌───────────────────────────────┐               ┌────────────────────────────────────────────┐
+│ src/app       screens         │  auth         │ Auth, profiles, game tables, record_scan   │
+│ fetchProfile() ───────────────┼──────────────▶│ Edge Functions scan / player (service role)│
+│ fetch* / submitScan() ────────┼──────────────▶│                                            │
+└───────────────────────────────┘               └────────────────────────────────────────────┘
+        ▲ imports @game/catalog                          │
+        └──── supabase/functions/_shared/game ───────────┘
+                                                      Tiger Data (optional): hypertable +
+                                                      continuous aggregates fed from Supabase
+                                                      for analytics / hackathon prize — see tiger/
 ```
 
-Clients never write game state. All writes go through the `scan` Edge Function, which uses the service role.
+Clients never write game state. Reads and writes go through Edge Functions (`player`, `scan`) using the service role on **Supabase Postgres**. Tiger is optional for time-series analytics (Supabase Edge cannot use Tiger free-tier TLS certs).
 
-## Data model (follow-up PR)
+## Data model (Supabase Postgres)
 
-- `profiles(id, display_name, is_demo)`: created by a trigger on sign-up. Clients may update only `display_name`.
-- `scan_codes(id, station_name, line, active)`: no client access.
-- `user_pets(user_id, species, line, copies, is_gold, first_caught_at, first_station)`: PK (user, species, line). Read-own.
-- `scans(id, user_id, code_id, station_name, code_line, species, line, is_gold, created_at)`: read-own. Drives cooldowns, history, and stats.
-- `record_scan(...)`: service-role-only RPC. Takes an advisory lock per (user, code), checks the cooldown, inserts the scan, and upserts the pet.
-- `my_stats()`: security-invoker RPC returning `total_scans` and `lines_visited`.
+- `profiles(id, display_name, is_demo)`: sign-up trigger. Clients read; update own `display_name` only.
+- `scan_codes`, `user_pets`, `scans`: same shape as in `tiger/migrations/001_game.sql` (without Timescale).
+- `record_scan(...)`, `my_stats(...)`: service role only; called from Edge Functions.
+
+Tiger copy: [tiger/README.md](tiger/README.md).
 
 ## Out of scope for the MVP
 
