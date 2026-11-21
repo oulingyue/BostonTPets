@@ -4,7 +4,7 @@ Collectible Boston pets. Ride the T, scan QR codes at stations, and collect crea
 Built for BostonHacks; the repo should stay playable after the event.
 
 **Source of truth for game data (in code):** `supabase/functions/_shared/game/catalog.ts` and `roll.ts`.  
-Until the expanded catalog ships, those files still implement the **skeleton** described under [Shipped today](#shipped-today-skeleton).
+Those files implement the full roster and pity rules below. Collection and art should read `getPet(petId)`, `CATALOG`, and `TOTAL_PETS`.
 
 ---
 
@@ -23,7 +23,7 @@ Every collectible in the game is exactly one row in the catalog with a **globall
 
 | Concept | Meaning |
 | --- | --- |
-| **`pet_id`** | The drawable collectible. **65** ids in the full roster; **20** in the skeleton. |
+| **`pet_id`** | The drawable collectible. **65** ids. |
 | **Collection slot** | At most one `user_pets` row per `(user_id, pet_id)`. |
 | **Duplicate draw** | Same `pet_id` rolled again → increment `copies`, run gold merge; UI shows higher stars. |
 | **`scans.id`** | Every scan is its own event (audit / history). Many scans can reference the same `pet_id`. |
@@ -33,30 +33,25 @@ Rules:
 - Two different `pet_id`s are always different collectibles (e.g. base Alewife vs Red Line Alewife variant).
 - **Shared commons** use one `pet_id` for all lines (e.g. `mallard_duck` whether you scanned on Red or Green).
 - **Line-exclusive** creatures use one base `pet_id` per creature; only the **line variant** gets a second id (e.g. `lobster` vs `red_line_lobster`).
-- Skeleton shorthand until the full catalog ships: `pet_id = "{line}_{species}"` (20 ids). Implemented in code as `petId(species, line)`.
+- Ids in code: shared commons use the base slug (`mallard_duck`). Line-exclusives use the base slug (`lobster`, `alewife`). The line variant is `{line}_line_{baseId}` (`red_line_lobster`, `red_line_alewife`).
 
 Roll output always includes `pet_id`. `record_scan` upserts on `(user_id, pet_id)`.
 
 ---
 
-## Shipped today (skeleton)
+## Shipped today
 
-What is implemented in the app, database enums, and Edge Functions **right now**. Use this for the first end-to-end demo if the expanded catalog is not merged yet.
+`catalog.ts`, `roll.ts`, and `record_scan` implement the [loot table](#loot-table) and [pity](#pity-target) below.
 
-| Species | Rarity | Weight | Emoji |
-| --- | --- | --- | --- |
-| Duckling | common | 45% | 🐥 |
-| Wild Turkey | common | 35% | 🦃 |
-| Harbor Seal | rare | 15% | 🦭 |
-| Lobster | legendary | 5% | 🦞 |
-
-- **Collection size:** **20** unique `pet_id`s = `{line}_{species}` in `user_pets`.
-- **Line roll:** 70% the scanned code's line; otherwise uniform among the other four lines.
+- **Collection size:** **65** `pet_id`s (5 shared commons + 30 line-exclusives + 30 line variants).
+- **Line roll:** the scanned code's line only.
+- **Line variant:** 5% when the creature is line-specific Rare, Epic, or Legendary.
 - **Gold:** 1% on any roll; upgrades that slot permanently.
-- **Pity:** none.
-- **UI:** Collection shows four species cards with a dot per line; "X / 20 collected."
+- **Pity:** `roll_pity.since_epic_plus` / `since_legendary`, updated inside `record_scan` (migration `20251122100000_roll_pity.sql`). See [Pity](#pity-target).
+- **UI:** Collection is a temporary rarity-grouped list (`X / 65`) so the new ids render. Filters and layout belong to the collection teammate. Art is still the catalog emoji; sprites can key off `petId`.
+- **Old rows:** skeleton ids such as `red_lobster` are not migrated. Wipe `user_pets` and `scans` on a database that already has them.
 
-Demo accounts (`profiles.is_demo`, admin-only): boosted Lobster weight, 10% gold, **no scan cooldowns**.
+Demo accounts (`profiles.is_demo`, admin-only): legendary weight **22** (commons drop from 12 to 8), 10% gold, **no scan cooldowns**, **pity off**. Config: `DEMO_ODDS`.
 
 ---
 
@@ -106,9 +101,14 @@ Track per-user counters on the server (not client):
 - **Epic+:** guaranteed within **10** rolls without Epic or better.
 - **Legendary:** guaranteed by roll **60** without a Legendary.
 
-With pity, expect roughly one Legendary every **~35** rolls on average (design target; validate in `roll.test.ts` after implementation).
+Pity resets from the **base** rarity (a line variant or gold does not change it). Documented in `roll.ts`:
 
-Pity resets or decrements according to the tier that triggered the guarantee (document in `roll.ts` when built).
+- Legendary (natural or pity) → both counters `0`.
+- Epic → `sinceEpicPlus = 0`, `sinceLegendary += 1`.
+- Rare or common → both counters `+= 1`.
+- If both guarantees are due, Legendary wins.
+
+Epic pity draws that line's two epics and its legendary at **4:4:2**, so some guaranteed Epic+ rolls are legendaries. With both guarantees, expect about one Legendary every **~28** rolls (`roll.test.ts`). A flat 2% capped at 60, ignoring those extra legendaries, would be ~35.
 
 ### Gold (unchanged intent)
 
@@ -133,13 +133,13 @@ Later: one sprite per creature + programmatic line tint for variants.
 
 ## Roll rules (server-side only)
 
-| Rule | Skeleton (now) | Target |
-| --- | --- | --- |
-| Table | Global species weights + random line | Roll only from **scanned line's** table |
-| Line variant | N/A (line is always separate dimension) | 5% when creature is line-specific Rare+ |
-| Gold | 1% | 1% |
-| Pity | Off | Epic+ @ 10, Legendary @ 60 |
-| RNG | `roll.ts` in `scan` Edge Function | Same; extend tests for new tables + pity |
+| Rule | Implemented |
+| --- | --- |
+| Table | Roll only from **scanned line's** table |
+| Line variant | 5% when creature is line-specific Rare+ |
+| Gold | 1% (10% on demo accounts) |
+| Pity | Epic+ @ 10, Legendary @ 60 (off for demo accounts) |
+| RNG | `roll.ts` in the `scan` Edge Function; clients never choose the outcome |
 
 Clients never choose outcomes. `scan` calls `record_scan` after a successful roll.
 
@@ -266,11 +266,12 @@ Migration: `supabase/migrations/20251121220000_pet_id.sql`. Skeleton ids: `{line
 
 Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.ts`, not Postgres enums for pets.
 
-### Target migration (when implementing full roster)
+### Roster migration
 
-- Catalog: array/map of **65** entries keyed by `pet_id` (tier, emoji, line-exclusive table). `parsePetId` in the app only covers skeleton slugs until then.
-- Add **`roll_pity`** (or columns on `profiles`): `rolls_since_epic_plus`, `rolls_since_legendary` (names illustrative).
-- **New migration only** — hand-authored migration file; keep Tiger `tiger/migrations/` in sync for analytics shapes if used.
+- Catalog: `CATALOG` in `catalog.ts`, 65 entries keyed by `pet_id`. Look up with `getPet`.
+- Pity: `roll_pity (user_id, since_epic_plus, since_legendary)` in `supabase/migrations/20251122100000_roll_pity.sql`. Not copied to Tiger.
+- `record_scan` takes the pity the roll used (`p_expected_*`) and the next counters. A mismatch returns `pity_conflict` and writes nothing; `scan` re-rolls. The advisory lock is per `user_id`.
+- Skeleton `pet_id`s are not rewritten. Wipe `user_pets` and `scans` if they still hold `{line}_{species}` rows.
 
 ### Planned (MVP — not in DB yet)
 
@@ -288,18 +289,18 @@ Order work so the **demo never breaks**.
 
 | Priority | Work | Outcome |
 | --- | --- | --- |
-| **P0** | `supabase db push`, deploy `scan` + `player`, phone E2E on skeleton | Judges can scan QR and see a pet |
+| **P0** | `supabase db push`, deploy `scan` + `player`, phone E2E | Judges can scan QR and see a pet |
 | **P0** | Demo poster QRs + `is_demo` account | Smooth booth loop |
-| **P1** | Expand `catalog.ts` + `roll.ts` + `roll.test.ts` (per-line table, variants) | Backend matches target odds |
+| **P1** | Expand `catalog.ts` + `roll.ts` + `roll.test.ts` (per-line table, variants) | In the repo. Redeploy `scan` after `db push`. |
 | **P1** | ~~DB `pet_id` migration~~ (see `20251121220000_pet_id.sql`) + redeploy functions | Collection keyed by `pet_id` |
 | **P2** | Collection UI for 65 slots (filters, counts) | App matches target design |
-| **P2** | Pity counters in DB + roll integration | Fairer legendary pacing |
+| **P2** | Pity counters in DB + roll integration | In the repo (`roll_pity`). Needs `db push` + redeploy. |
 | **P2** | **Friends** — migration + `social`/`player` + Friends tab + friend collection view | Social demo for judges |
 | **P2** | **Leaderboards** — RPC + UI (Collectors / Gold / Scans) | Arcade hook in pitch |
 | **P3** | Tiger scan replication + one chart | MLH Tiger story |
 | **P4** | Collection UI polish, full roster, pity | After social MVP works |
 
-If P1 slips, **ship the skeleton demo** and describe the full roster from this doc in the pitch. Friends + leaderboards stay **in MVP scope** even if the 65-pet catalog slips.
+The 65-pet catalog and pity are in the repo. Friends + leaderboards stay **in MVP scope**. Collection filters and art can trail that.
 
 ---
 
@@ -307,7 +308,7 @@ If P1 slips, **ship the skeleton demo** and describe the full roster from this d
 
 Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, one-way follows, seasonal leaderboard resets.
 
-**In MVP scope (design only until built):** friends (add, accept, view pets), leaderboards (collectors / gold / scans). **Also in scope for product:** pity, 65-slot roster — may trail the skeleton demo.
+**In MVP scope (design only until built):** friends (add, accept, view pets), leaderboards (collectors / gold / scans). Pity and the 65-pet roster are implemented in the roll; collection layout can still trail.
 
 ---
 

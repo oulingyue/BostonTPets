@@ -1,4 +1,4 @@
-import { LINES, parsePetId, petName, TOTAL_PETS } from '@game/catalog';
+import { getPet, LINES, TOTAL_PETS } from '@game/catalog';
 import { useCallback } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PetBadge } from '@/components/PetBadge';
@@ -61,15 +61,14 @@ export default function ProfileScreen() {
         </View>
       }
       renderItem={({ item }) => {
-        const slot = parsePetId(item.pet_id);
-        if (!slot) return null;
+        const pet = getPet(item.pet_id);
         return (
           <View style={styles.historyRow}>
-            <PetBadge species={slot.species} line={slot.line} owned isGold={item.is_gold} size={40} />
+            <PetBadge petId={item.pet_id} owned isGold={item.is_gold} size={40} />
             <View style={{ flex: 1 }}>
               <Text style={styles.historyPet}>
                 {item.is_gold ? 'Gold ' : ''}
-                {petName(slot.line, slot.species)}
+                {pet?.name ?? item.pet_id}
               </Text>
               <Text style={styles.historyMeta}>
                 {item.station_name} · {new Date(item.created_at).toLocaleString()}

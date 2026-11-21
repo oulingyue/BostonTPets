@@ -2,7 +2,8 @@
 // in-memory sample data, with no Supabase project. Scans are rolled locally with the catalog odds.
 // Never enabled in a normal build: the flag is off unless that env var is set.
 import type { ScanResponse } from '@game/api';
-import { LINES, ODDS, SPECIES, SPECIES_INFO, petId, parsePetId, type Line, type Species } from '@game/catalog';
+import type { Line } from '@game/catalog';
+import { rollPet, type PityState } from '@game/roll';
 import type { Session } from '@supabase/supabase-js';
 import type { OwnedPet, Profile, ScanHistoryItem, Stats } from './api';
 
@@ -53,34 +54,37 @@ const STATIONS: { name: string; line: Line }[] = [
   { name: 'World Trade Center', line: 'silver' },
 ];
 
-const pets: OwnedPet[] = [
-  { pet_id: petId('duckling', 'red'), copies: 2, is_gold: false, first_caught_at: hoursAgo(80), first_station: 'Park Street' },
-  { pet_id: petId('turkey', 'red'), copies: 1, is_gold: false, first_caught_at: hoursAgo(76), first_station: 'Harvard' },
-  { pet_id: petId('duckling', 'orange'), copies: 1, is_gold: false, first_caught_at: hoursAgo(60), first_station: 'Ruggles' },
-  { pet_id: petId('duckling', 'green'), copies: 3, is_gold: false, first_caught_at: hoursAgo(55), first_station: 'Kenmore' },
-  { pet_id: petId('turkey', 'green'), copies: 1, is_gold: false, first_caught_at: hoursAgo(50), first_station: 'BU Central' },
-  { pet_id: petId('seal', 'green'), copies: 1, is_gold: false, first_caught_at: hoursAgo(40), first_station: 'Kenmore' },
-  { pet_id: petId('turkey', 'blue'), copies: 1, is_gold: false, first_caught_at: hoursAgo(30), first_station: 'Government Center' },
-  { pet_id: petId('seal', 'blue'), copies: 2, is_gold: true, first_caught_at: hoursAgo(26), first_station: 'Aquarium' },
-  { pet_id: petId('duckling', 'silver'), copies: 7, is_gold: false, first_caught_at: hoursAgo(20), first_station: 'South Station' },
+const SEED: { pet_id: string; copies: number; is_gold: boolean; station: string; line: Line; hours: number }[] = [
+  { pet_id: 'mallard_duck', copies: 2, is_gold: false, station: 'Park Street', line: 'red', hours: 80 },
+  { pet_id: 'red_line_alewife', copies: 1, is_gold: false, station: 'Harvard', line: 'red', hours: 76 },
+  { pet_id: 'monarch_butterfly', copies: 1, is_gold: false, station: 'Ruggles', line: 'orange', hours: 60 },
+  { pet_id: 'swan', copies: 3, is_gold: false, station: 'Kenmore', line: 'green', hours: 55 },
+  { pet_id: 'bullfrog', copies: 1, is_gold: false, station: 'BU Central', line: 'green', hours: 50 },
+  { pet_id: 'harbor_seal', copies: 2, is_gold: true, station: 'Aquarium', line: 'blue', hours: 30 },
+  { pet_id: 'pigeon', copies: 7, is_gold: false, station: 'South Station', line: 'silver', hours: 20 },
 ];
 
-let nextId = 1;
-const history: ScanHistoryItem[] = pets
-  .flatMap((p, i) =>
-    Array.from({ length: p.copies }, (_, c) => ({
-      id: nextId++,
-      station_name: p.first_station ?? 'Park Street',
-      pet_id: p.pet_id,
-      is_gold: p.is_gold && c === p.copies - 1,
-      created_at: hoursAgo(80 - i * 7 - c * 2),
-    })),
-  )
-  .sort((a, b) => b.created_at.localeCompare(a.created_at));
+const pets: OwnedPet[] = SEED.map((seed) => ({
+  pet_id: seed.pet_id,
+  copies: seed.copies,
+  is_gold: seed.is_gold,
+  first_caught_at: hoursAgo(seed.hours),
+  first_station: seed.station,
+}));
 
-const visitedLines = new Set<Line>(
-  history.map((h) => parsePetId(h.pet_id)?.line).filter((l): l is Line => !!l),
-);
+let nextId = 1;
+const history: ScanHistoryItem[] = SEED.flatMap((seed) =>
+  Array.from({ length: seed.copies }, (_, c) => ({
+    id: nextId++,
+    station_name: seed.station,
+    pet_id: seed.pet_id,
+    is_gold: seed.is_gold && c === seed.copies - 1,
+    created_at: hoursAgo(seed.hours - c * 2),
+  })),
+).sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+const visitedLines = new Set<Line>(SEED.map((seed) => seed.line));
+let pity: PityState = { sinceEpicPlus: 0, sinceLegendary: 0 };
 
 export const previewData = {
   async pets(): Promise<OwnedPet[]> {
@@ -98,24 +102,20 @@ export const previewData = {
   /** Rolls locally with the real odds, then updates the in-memory collection like record_scan would. */
   async scan(): Promise<ScanResponse> {
     const station = STATIONS[Math.floor(Math.random() * STATIONS.length)];
-    const line: Line =
-      Math.random() < ODDS.scannedLineChance
-        ? station.line
-        : LINES.filter((l) => l !== station.line)[Math.floor(Math.random() * (LINES.length - 1))];
-    const species = pickSpecies();
-    const isGold = Math.random() < ODDS.goldChance;
+    const roll = rollPet(station.line, { pity });
+    pity = roll.nextPity;
 
-    const id = petId(species, line);
-    const existing = pets.find((p) => p.pet_id === id);
+    const existing = pets.find((p) => p.pet_id === roll.petId);
     const wasGold = existing?.is_gold ?? false;
+    const isNew = !existing;
     if (existing) {
       existing.copies += 1;
-      existing.is_gold ||= isGold;
+      existing.is_gold ||= roll.isGold;
     } else {
       pets.push({
-        pet_id: id,
+        pet_id: roll.petId,
         copies: 1,
-        is_gold: isGold,
+        is_gold: roll.isGold,
         first_caught_at: new Date().toISOString(),
         first_station: station.name,
       });
@@ -123,28 +123,19 @@ export const previewData = {
     history.unshift({
       id: nextId++,
       station_name: station.name,
-      pet_id: id,
-      is_gold: isGold,
+      pet_id: roll.petId,
+      is_gold: roll.isGold,
       created_at: new Date().toISOString(),
     });
-    visitedLines.add(line);
+    visitedLines.add(station.line);
 
     return {
       status: 'ok',
       stationName: station.name,
-      pet: { petId: id, species, line, isGold },
+      pet: { petId: roll.petId, isGold: roll.isGold, isLineVariant: roll.isLineVariant },
       copies: existing?.copies ?? 1,
-      isNew: !existing,
-      becameGold: isGold && !wasGold,
+      isNew,
+      becameGold: roll.isGold && !wasGold,
     };
   },
 };
-
-function pickSpecies(): Species {
-  let target = Math.random() * SPECIES.reduce((sum, s) => sum + SPECIES_INFO[s].weight, 0);
-  for (const s of SPECIES) {
-    target -= SPECIES_INFO[s].weight;
-    if (target < 0) return s;
-  }
-  return SPECIES[SPECIES.length - 1];
-}
