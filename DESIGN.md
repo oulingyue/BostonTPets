@@ -50,7 +50,7 @@ What is implemented in the app, database enums, and Edge Functions **right now**
 | Harbor Seal | rare | 15% | 🦭 |
 | Lobster | legendary | 5% | 🦞 |
 
-- **Collection size:** **20** unique `pet_id`s = `{line}_{species}` (DB still stores `species` + `line`; same uniqueness).
+- **Collection size:** **20** unique `pet_id`s = `{line}_{species}` in `user_pets`.
 - **Line roll:** 70% the scanned code's line; otherwise uniform among the other four lines.
 - **Gold:** 1% on any roll; upgrades that slot permanently.
 - **Pity:** none.
@@ -167,7 +167,9 @@ Never create a second collection row for the same `pet_id`.
 
 ## Screens
 
-Tabs: **Collection**, **Scan** (center), **Profile**.
+Tabs: **Collection**, **Scan** (center), **Friends**, **Profile** (MVP — Friends tab can ship after core scan loop is stable).
+
+**MVP includes** friends (add + view collections) and leaderboards. Not implemented in the repo yet; spec below.
 
 ### Collection
 
@@ -185,12 +187,51 @@ Camera + reticle; unmount when tab blurs.
 
 ### Profile
 
-Display name, email, stat tiles (collected, gold, scans, lines visited), scan history, sign out.
+Display name, email, stat tiles (collected, gold, scans, lines visited), scan history, sign out. Link to **leaderboards** (or show a compact top-3 teaser).
 
-### Stretch (post-MVP or if time remains)
+### Friends (MVP)
 
-- **Friends** — add by username or code; view each other's collection summary (no trading in v1).
-- **Leaderboard** — most unique slots, most gold, most scans this week (materialized on Supabase or Tiger aggregates).
+**Goals:** ride with classmates, compare collections, light social proof for the hackathon demo.
+
+**Add a friend**
+
+- By **display name** search (must match exactly one profile), or by **`friend_code`** (short unique code on `profiles`, generated at sign-up).
+- Request → **pending** until the other user accepts (symmetric friendship only; no one-way follow in MVP).
+- Cap **50** friends per user for MVP (abuse guard).
+
+**Friend list**
+
+- Name, `X / TOTAL_PETS` collected, gold count, last active (optional: relative time of last scan).
+- Tap → **friend profile**: read-only collection (same layout as own Collection, but no scan). Show their pets with stars/gold; hide email and scan history details unless we later add a privacy toggle (MVP: **no** scan history on friend view).
+
+**Not in MVP:** trading/gifting pets, blocking, DMs, activity feed.
+
+**API shape (planned)**
+
+- Extend `player` or add Edge Function `social` with `resource`: `friend_search`, `friend_request`, `friend_accept`, `friend_decline`, `friends_list`, `friend_pets` (target `user_id` must be an accepted friend).
+- RLS: users never read arbitrary `user_pets`; only self or via service role after friendship check.
+
+### Leaderboards (MVP)
+
+**Goals:** arcade-style ranking for the pitch — “who’s filling the dex fastest?”
+
+**Boards** (all-time for hackathon MVP; no season reset required):
+
+| Board | Rank by |
+| --- | --- |
+| **Collectors** | Distinct `pet_id` count (unique slots) |
+| **Gold** | Count of `user_pets` where `is_gold` |
+| **Scans** | Total scans (`my_stats.total_scans` or `count(scans)`) |
+
+- Show **top 50** + **highlight current user** row (rank + value) even if not in top 50.
+- Display name on rows; no email. Tie-break: earlier `profiles.created_at` or higher user id — pick one in SQL and document it.
+
+**API shape (planned)**
+
+- `player` resource `leaderboard` with `board: 'collectors' | 'gold' | 'scans'`.
+- Implement as SQL views or security-definer RPCs reading aggregates only (no per-user pet leakage except public stats fields).
+
+**Tiger (optional later):** weekly scans board from continuous aggregates; not required for MVP.
 
 ---
 
@@ -229,7 +270,13 @@ Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.t
 
 - Catalog: array/map of **65** entries keyed by `pet_id` (tier, emoji, line-exclusive table). `parsePetId` in the app only covers skeleton slugs until then.
 - Add **`roll_pity`** (or columns on `profiles`): `rolls_since_epic_plus`, `rolls_since_legendary` (names illustrative).
-- **New migration only** — autogenerate SQL in repo via `supabase db diff` / hand-authored migration file; keep Tiger `tiger/migrations/` in sync for analytics shapes if used.
+- **New migration only** — hand-authored migration file; keep Tiger `tiger/migrations/` in sync for analytics shapes if used.
+
+### Planned (MVP — not in DB yet)
+
+- `profiles.friend_code text UNIQUE NOT NULL` (e.g. 8-char alphanumeric, generated on insert).
+- `friendships (id, user_a, user_b, status, created_at)` with `user_a < user_b` canonical pair, `status` in `pending`, `accepted`, `declined`; unique on `(user_a, user_b)`.
+- Leaderboards: no new tables — aggregate `user_pets` / `scans` via RPC or views.
 
 Tiger mirror: [tiger/README.md](tiger/README.md).
 
@@ -247,18 +294,20 @@ Order work so the **demo never breaks**.
 | **P1** | ~~DB `pet_id` migration~~ (see `20251121220000_pet_id.sql`) + redeploy functions | Collection keyed by `pet_id` |
 | **P2** | Collection UI for 65 slots (filters, counts) | App matches target design |
 | **P2** | Pity counters in DB + roll integration | Fairer legendary pacing |
+| **P2** | **Friends** — migration + `social`/`player` + Friends tab + friend collection view | Social demo for judges |
+| **P2** | **Leaderboards** — RPC + UI (Collectors / Gold / Scans) | Arcade hook in pitch |
 | **P3** | Tiger scan replication + one chart | MLH Tiger story |
-| **P4** | Friends, leaderboard, polish | Only if P0–P2 are done |
+| **P4** | Collection UI polish, full roster, pity | After social MVP works |
 
-If P1 slips, **ship the skeleton demo** and describe the full roster from this doc in the pitch.
+If P1 slips, **ship the skeleton demo** and describe the full roster from this doc in the pitch. Friends + leaderboards stay **in MVP scope** even if the 65-pet catalog slips.
 
 ---
 
 ## Out of scope (for now)
 
-Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, trading between players.
+Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, one-way follows, seasonal leaderboard resets.
 
-Pity, 65-slot collection, and per-line tables are **in scope for the target design**; they are only "out of scope" for the frozen skeleton until migrated.
+**In MVP scope (design only until built):** friends (add, accept, view pets), leaderboards (collectors / gold / scans). **Also in scope for product:** pity, 65-slot roster — may trail the skeleton demo.
 
 ---
 

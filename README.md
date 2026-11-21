@@ -23,13 +23,13 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] Shared game catalog + roll logic, with tests for the odds
 
 ### Next
-- [ ] Push Supabase migrations (`profiles` + game), deploy `scan` + `player`, and test a scan end-to-end on a phone
-- [ ] (Optional) Tiger hypertable + demo codes for analytics — [tiger/README.md](tiger/README.md)
+- [ ] Push Supabase migrations (`profiles` + game + `pet_id`), deploy `scan` + `player`, and test a scan end-to-end on a phone
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
-- [ ] Add Friends feature
-- [ ] Refine Collections Page
-- [ ] Leaderboard feature
+- [ ] **MVP — Friends:** friend codes, requests, list, read-only friend collection ([DESIGN.md](DESIGN.md#friends-mvp))
+- [ ] **MVP — Leaderboards:** collectors / gold / scans ([DESIGN.md](DESIGN.md#leaderboards-mvp))
+- [ ] Refine Collection page
+- [ ] (Optional) Tiger hypertable + demo codes for analytics — [tiger/README.md](tiger/README.md)
 
 ## Loot table
 
