@@ -28,6 +28,8 @@ export function ProfileHeader(p: Props) {
   const name = p.displayName ?? (p.handle ? `@${p.handle}` : 'Rider');
   const gold = p.pets.filter((x) => x.is_gold).length;
   const tiles = [
+    // Hidden if the backend predates points (stats.points missing).
+    ...(p.stats.points === undefined ? [] : [{ label: 'Points', value: p.stats.points.toLocaleString('en-US') }]),
     { label: 'Collected', value: String(p.pets.length) },
     { label: 'Gold pets', value: String(gold) },
     { label: 'Scans', value: String(p.stats.total_scans) },

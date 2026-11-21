@@ -75,6 +75,8 @@ type Props = {
   isNew: boolean;
   /** A gold pull that upgraded a pet you already had. */
   becameGold?: boolean;
+  /** Leaderboard points this pull earned. Omitted (no line shown) by a scan function that predates points. */
+  points?: { total: number; dailyBonus: number };
   onDone: () => void;
   /** Slows the whole sequence down (2 = half speed). For the reveal playground. */
   timeScale?: number;
@@ -161,7 +163,7 @@ let hasSeenFullReveal = false;
  *   5. for duplicates, the EXP bar fills; each full bar is a level-up (banner, rising arrows, a new star).
  * Legendary pulls flash twice and shake the station. Gold pulls sparkle.
  */
-export function PullReveal({ pet, line, stationName, copies, isNew, becameGold = false, onDone, timeScale = 1 }: Props) {
+export function PullReveal({ pet, line, stationName, copies, isNew, becameGold = false, points, onDone, timeScale = 1 }: Props) {
   const reduceMotion = useReducedMotion();
   const screen = useWindowDimensions();
   const [fontsLoaded] = useFonts({ Silkscreen_400Regular, Silkscreen_700Bold });
@@ -751,6 +753,12 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
                 <Animated.Text style={[styles.expPop, pixelFontBold, expPopStyle]}>+{progress.gained} EXP</Animated.Text>
               )}
             </View>
+            {points && points.total > 0 && (
+              <Text style={[styles.points, pixelFontBold]} accessibilityLabel={`Plus ${points.total} points`}>
+                +{points.total} PTS
+                {points.dailyBonus > 0 && <Text style={styles.pointsBonus}>{`  INCL. +${points.dailyBonus} DAILY`}</Text>}
+              </Text>
+            )}
             <Pressable
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, !finished && styles.hidden]}
               onPress={onDone}
@@ -879,6 +887,8 @@ const styles = StyleSheet.create({
   bannerText: { fontSize: 30, fontWeight: '900', color: '#FFD84D', letterSpacing: 2 },
   outline: { position: 'absolute', color: C.ink },
   expRow: { alignSelf: 'stretch' },
+  points: { marginTop: 8, color: '#16A34A', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  pointsBonus: { color: '#B45309', fontSize: 11 },
   expPop: { position: 'absolute', right: 0, top: -20, color: '#16A34A', fontSize: 14, fontWeight: '800' },
   scene: { flex: 1, overflow: 'hidden' },
   abs: { position: 'absolute' },

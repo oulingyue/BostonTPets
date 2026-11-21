@@ -96,7 +96,7 @@ export default {
           if (stats.error) throw stats.error;
           if (pets.error) throw pets.error;
           if (!summary) return Response.json(null);
-          const row = stats.data as { total_scans: number | string; lines_visited: number | string };
+          const row = stats.data as { total_scans: number | string; lines_visited: number | string; points: number | string };
 
           return Response.json({
             ...summary,
@@ -104,7 +104,7 @@ export default {
             followers,
             created_at: person.created_at,
             last_active_at: person.last_active_at,
-            stats: { total_scans: Number(row.total_scans), lines_visited: Number(row.lines_visited) },
+            stats: { total_scans: Number(row.total_scans), lines_visited: Number(row.lines_visited), points: Number(row.points) },
             pets: pets.data,
           });
         }

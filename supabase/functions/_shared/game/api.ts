@@ -13,6 +13,8 @@ export type ScanResponse =
       copies: number;
       isNew: boolean;
       becameGold: boolean;
+      /** Leaderboard points this pull earned, including the daily bonus (rules in points.ts). */
+      points: { total: number; dailyBonus: number };
     }
   | { status: 'cooldown'; stationName: string; nextAvailableAt: string }
   | { status: 'invalid_code' };

@@ -76,6 +76,7 @@ export default function ScanScreen() {
           copies={r.copies}
           isNew={r.isNew}
           becameGold={r.becameGold}
+          points={r.points}
           onDone={reset}
         />
       </SafeAreaView>

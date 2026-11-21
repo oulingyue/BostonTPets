@@ -1,5 +1,6 @@
 import { getPet, isLine, LINE_INFO, LINE_TABLE, LINES, type Creature, type Line, type Rarity } from '@game/catalog';
 import { pullProgress } from '@game/leveling';
+import { scorePull } from '@game/points';
 import { rollPet, type PityState } from '@game/roll';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -11,8 +12,9 @@ import { isSfxEnabled, setSfxEnabled } from '@/lib/sfx';
 // Playground for the pull reveal: pick any line and creature from the catalog, replay it,
 // slow it down, or roll a random pull with the real odds and pity.
 // Open /dev/reveal (or the link at the bottom of Profile). Query params preset the controls, e.g.
-//   /dev/reveal?line=red&pet=lobster&gold=1&pull=levelUp&speed=2&ui=0   (ui=0 hides the controls)
+//   /dev/reveal?line=red&pet=lobster&gold=1&daily=1&pull=levelUp&speed=2&ui=0   (ui=0 hides the controls)
 // pull = new | dupe | levelUp | max: what this pull does to the pet's level (rules in _shared/game/leveling.ts).
+// daily=1: the pull is the first scan of the day, so its points include the daily bonus (_shared/game/points.ts).
 // Available in every build (dev, preview, and production), so the reveal can be shown on any phone.
 
 const SPEEDS = [
@@ -37,7 +39,7 @@ const DEMO_STATIONS: Record<Line, string> = {
   silver: 'Airport',
 };
 
-type Params = { line?: string; pet?: string; gold?: string; pull?: string; speed?: string; ui?: string };
+type Params = { line?: string; pet?: string; gold?: string; daily?: string; pull?: string; speed?: string; ui?: string };
 
 function creaturesFor(line: Line): Creature[] {
   const table = LINE_TABLE[line];
@@ -67,6 +69,7 @@ export default function RevealPlayground() {
   const [line, setLine] = useState<Line>(isLine(params.line ?? '') ? (params.line as Line) : 'red');
   const [creatureId, setCreatureId] = useState(params.pet ?? 'lobster');
   const [isGold, setGold] = useState(params.gold === '1');
+  const [firstOfDay, setFirstOfDay] = useState(params.daily === '1');
   const [pullKind, setPullKind] = useState<PullKind>(isPullKind(params.pull) ? params.pull : 'new');
   const [timeScale, setTimeScale] = useState(Number(params.speed) || 1);
   const [soundOn, setSoundOn] = useState(isSfxEnabled());
@@ -78,6 +81,7 @@ export default function RevealPlayground() {
   const creature = pool.find((c) => c.id === creatureId) ?? LINE_TABLE[line].legendary;
   const pet = getPet(creature.id);
   const copies = copiesFor(creature.rarity, pullKind);
+  const points = scorePull({ rarity: creature.rarity, isGold, isNew: copies === 1, firstOfDay });
 
   const replay = () => setRun((n) => n + 1);
   // Opened from Profile: go back there. Opened directly by link: there's nothing behind it, so go home.
@@ -97,7 +101,7 @@ export default function RevealPlayground() {
   };
 
   // Changing any option remounts the reveal, which replays it from the start.
-  const revealKey = [line, creature.id, isGold, copies, timeScale, run].join('|');
+  const revealKey = [line, creature.id, isGold, firstOfDay, copies, timeScale, run].join('|');
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
@@ -141,6 +145,7 @@ export default function RevealPlayground() {
             <Chip label="🎲 Random pull" active onPress={randomPull} />
             <Chip label="↻ Replay" active onPress={replay} />
             <Chip label="Gold" active={isGold} onPress={() => setGold((v) => !v)} />
+            <Chip label="Daily bonus" active={firstOfDay} onPress={() => setFirstOfDay((v) => !v)} />
             <Chip
               label={soundOn ? '🔊 Sound on' : '🔇 Sound off'}
               active={soundOn}
@@ -170,6 +175,7 @@ export default function RevealPlayground() {
           copies={copies}
           isNew={copies === 1}
           becameGold={isGold && copies > 1}
+          points={points}
           onDone={replay}
           timeScale={timeScale}
         />
