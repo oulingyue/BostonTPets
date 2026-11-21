@@ -1,19 +1,18 @@
 import { getPet, isLine, LINE_INFO, LINE_TABLE, LINES, variantPetId, type Creature, type Line, type Rarity } from '@game/catalog';
 import { pullProgress } from '@game/leveling';
 import { rollPet, type PityState } from '@game/roll';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PullReveal, RARITY_COLOR } from '@/components/reveal/PullReveal';
-import { IS_PREVIEW } from '@/lib/preview';
 
 // Dev-only playground for the pull reveal: pick any line and creature from the catalog, replay it,
 // slow it down, or roll a random pull with the real odds and pity.
 // Open /dev/reveal (or the link at the bottom of Profile). Query params preset the controls, e.g.
 //   /dev/reveal?line=red&pet=lobster&variant=1&gold=1&pull=levelUp&speed=2&ui=0   (ui=0 hides the controls)
 // pull = new | dupe | levelUp | max: what this pull does to the pet's level (rules in _shared/game/leveling.ts).
-// Release builds redirect away, unless preview mode is on.
+// Available in every build (dev, preview, and production), so the reveal can be shown on any phone.
 
 const SPEEDS = [
   { label: '1×', timeScale: 1 },
@@ -73,8 +72,6 @@ export default function RevealPlayground() {
   const [run, setRun] = useState(0);
   const pity = useRef<PityState>({ sinceEpicPlus: 0, sinceLegendary: 0 });
   const showControls = params.ui !== '0';
-
-  if (!__DEV__ && !IS_PREVIEW) return <Redirect href="/" />;
 
   const pool = creaturesFor(line);
   const creature = pool.find((c) => c.id === creatureId) ?? LINE_TABLE[line].legendary;

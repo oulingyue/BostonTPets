@@ -15,7 +15,6 @@ import {
   fetchStats,
   type OwnedPet,
 } from '@/lib/api';
-import { IS_PREVIEW } from '@/lib/preview';
 import { signOut, useSession } from '@/lib/session';
 import { useFocusedData } from '@/lib/useAsync';
 import { colors, spacing } from '@/theme';
@@ -123,11 +122,9 @@ export default function ProfileScreen() {
         >
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>
-        {(__DEV__ || IS_PREVIEW) && (
-          <Link href="/dev/reveal" style={styles.devLink}>
-            Reveal playground (dev only)
-          </Link>
-        )}
+        <Link href="/dev/reveal" style={styles.devLink}>
+          Reveal playground
+        </Link>
       </ScrollView>
 
       <PetSheet pet={openPet} onClose={() => setOpenPet(null)} />

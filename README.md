@@ -81,7 +81,7 @@ Runs the whole app in the browser on sample data, with no Supabase project and n
 
 ### Reveal playground
 
-Open `/dev/reveal` (or the link at the bottom of the Profile tab) in a dev or preview build. Pick any line and creature from the catalog, choose what the pull does (new pet, duplicate, level up, max level), toggle the line variant and gold, roll a random pull with the real odds and pity, and replay at 1×, ½× or ¼× speed. Every save replays the reveal. The reveal lives in `src/components/reveal/`: timings are `T`, rarity colors are `RARITY_COLOR`, and the pixel sprites are in `sprites.ts`.
+Open `/dev/reveal`, or tap **Reveal playground** at the bottom of the Profile tab. It's available in every build, including production, so you can show it on any phone. Pick any line and creature from the catalog, choose what the pull does (new pet, duplicate, level up, max level), toggle the line variant and gold, roll a random pull with the real odds and pity, and replay at 1×, ½× or ¼× speed. Every save replays the reveal. The reveal lives in `src/components/reveal/`: timings are `T`, rarity colors are `RARITY_COLOR`, and the pixel sprites are in `sprites.ts`.
 
 ### Windows
 
