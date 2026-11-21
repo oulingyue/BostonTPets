@@ -1,11 +1,11 @@
 import type { ScanResponse } from '@game/api';
-import { parseScanPayload } from '@game/catalog';
+import { parseScanPayload, SPECIES_INFO } from '@game/catalog';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useIsFocused } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FareGateReveal } from '@/components/FareGateReveal';
+import { PullReveal } from '@/components/reveal/PullReveal';
 import { submitScan } from '@/lib/api';
 import { IS_PREVIEW, PREVIEW_CODE } from '@/lib/preview';
 import { colors, spacing } from '@/theme';
@@ -61,12 +61,20 @@ export default function ScanScreen() {
     const r = state.result;
     return (
       <SafeAreaView style={styles.fill}>
-        <FareGateReveal
-          pet={r.pet}
+        {/* Until the new loot table lands in the scan response: gold stands in for the line variant,
+            and the pet's line stands in for the station's line. */}
+        <PullReveal
+          pet={{
+            id: r.pet.species,
+            name: SPECIES_INFO[r.pet.species].name,
+            emoji: SPECIES_INFO[r.pet.species].emoji,
+            rarity: SPECIES_INFO[r.pet.species].rarity,
+            isVariant: r.pet.isGold,
+          }}
+          line={r.pet.line}
           stationName={r.stationName}
           copies={r.copies}
           isNew={r.isNew}
-          becameGold={r.becameGold}
           onDone={reset}
         />
       </SafeAreaView>

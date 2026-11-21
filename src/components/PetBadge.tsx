@@ -1,12 +1,19 @@
 import { GOLD_COLOR, LINE_INFO, SPECIES_INFO, type Line, type Species } from '@game/catalog';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors } from '@/theme';
+import { PetSprite } from './PetSprite';
 
-type Props = { species: Species; line: Line; owned: boolean; isGold?: boolean; size?: number };
+type Props = {
+  species: Species;
+  line: Line;
+  owned: boolean;
+  isGold?: boolean;
+  size?: number;
+};
 
 /**
- * Placeholder pet art: species emoji on a circle in the line color.
- * Swap the inner <Text> for real sprites later (base sprite + tinted color layer).
+ * Pet art on a circle in the line color (collection, history, species detail).
+ * Unowned pets show as a silhouette. Art comes from assets/pets/ via PetSprite.
  */
 export function PetBadge({ species, line, owned, isGold = false, size = 56 }: Props) {
   return (
@@ -24,9 +31,7 @@ export function PetBadge({ species, line, owned, isGold = false, size = 56 }: Pr
       ]}
       accessibilityLabel={owned ? `${LINE_INFO[line].name} ${SPECIES_INFO[species].name}` : 'Not found yet'}
     >
-      <Text style={{ fontSize: size * 0.5, opacity: owned ? 1 : 0.35 }}>
-        {owned ? SPECIES_INFO[species].emoji : '?'}
-      </Text>
+      <PetSprite id={species} emoji={SPECIES_INFO[species].emoji} size={size * 0.9} silhouette={!owned} />
     </View>
   );
 }

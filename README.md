@@ -110,13 +110,25 @@ The camera works only on a physical device.
 npm run preview:web
 ```
 
-Runs the whole app in the browser on sample data, with no Supabase project and no `.env.local` needed. Scans are rolled locally with the real catalog odds.
+Runs the whole app in the browser on sample data, with no Supabase project and no `.env.local` needed. Scans are rolled locally with the real catalog odds. `npm run preview` does the same in Expo Go on your phone, which is where haptics and real performance show up.
+
+### Reveal playground
+
+Open `/dev/reveal` (or the link at the bottom of the Profile tab) in a dev or preview build. Pick any line and creature from the planned loot table, toggle the line variant and NEW!, roll a random pull with the planned odds, and replay at 1×, ½× or ¼× speed. Every save replays the reveal. The reveal lives in `src/components/reveal/`: timings are `T`, rarity colors are `RARITY_COLOR`, and the pixel sprites are in `sprites.ts`.
 
 ### Windows
 
 - **Shell:** the commands above work as written in Git Bash. In PowerShell, copy the env file with `Copy-Item .env.example .env.local`; in Command Prompt, use `copy .env.example .env.local`.
 - **npm scripts:** on Windows, npm runs `package.json` scripts through Command Prompt, which doesn't understand `VAR=1 command`. To set an environment variable in a script, use `cross-env VAR=1 command`, as `preview:web` does.
 - **Phone can't connect:** Windows Firewall blocks Expo's dev server unless Node.js is allowed on the network, and it's blocked by default on networks Windows treats as public, like most hackathon Wi-Fi. Allow Node.js when Windows asks, or run `npx expo start --tunnel`.
+
+## Adding pet art
+
+Creatures show their emoji until they have art. The style is cute 16-bit pixel art.
+
+1. Save a square PNG with a transparent background as `assets/pets/<id>.png`. The id is the creature's id, such as `lobster` or `mit-beaver`.
+2. Add a line for it in `src/lib/petArt.ts`. The app then shows the art everywhere: collection, history, and the pull reveal.
+3. Optional: an eyes-closed version saved as `assets/pets/<id>-blink.png`, and added as `blink`, makes the pet blink.
 
 ## Deploy backend
 
@@ -133,5 +145,5 @@ Tiger (hypertable / prize demo): [tiger/README.md](tiger/README.md) — analytic
 
 ```sh
 npm run typecheck   # tsc --noEmit
-npm run test:game   # roll odds + QR payload parsing (node:test)
+npm run test:game   # roll odds, QR payload parsing, leveling (node:test)
 ```

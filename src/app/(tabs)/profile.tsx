@@ -1,8 +1,10 @@
 import { LINES, petName, TOTAL_PETS } from '@game/catalog';
+import { Link } from 'expo-router';
 import { useCallback } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PetBadge } from '@/components/PetBadge';
 import { fetchMyPets, fetchProfile, fetchScanHistory, fetchStats } from '@/lib/api';
+import { IS_PREVIEW } from '@/lib/preview';
 import { signOut, useSession } from '@/lib/session';
 import { useFocusedData } from '@/lib/useAsync';
 import { colors, spacing } from '@/theme';
@@ -76,12 +78,19 @@ export default function ProfileScreen() {
       )}
       ListEmptyComponent={<Text style={styles.empty}>No scans yet.</Text>}
       ListFooterComponent={
-        <Pressable
-          style={styles.signOut}
-          onPress={() => signOut().catch((e) => Alert.alert('Sign out failed', String(e)))}
-        >
-          <Text style={styles.signOutText}>Sign out</Text>
-        </Pressable>
+        <View>
+          <Pressable
+            style={styles.signOut}
+            onPress={() => signOut().catch((e) => Alert.alert('Sign out failed', String(e)))}
+          >
+            <Text style={styles.signOutText}>Sign out</Text>
+          </Pressable>
+          {(__DEV__ || IS_PREVIEW) && (
+            <Link href="/dev/reveal" style={styles.devLink}>
+              Reveal playground (dev only)
+            </Link>
+          )}
+        </View>
       }
     />
   );
@@ -121,4 +130,5 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
   signOut: { alignItems: 'center', padding: spacing.lg },
   signOutText: { color: colors.danger, fontWeight: '700', fontSize: 16 },
+  devLink: { textAlign: 'center', color: colors.muted, fontSize: 13, paddingBottom: spacing.lg },
 });
