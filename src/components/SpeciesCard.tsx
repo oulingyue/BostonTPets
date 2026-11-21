@@ -1,4 +1,12 @@
-import { GOLD_COLOR, LINE_INFO, LINES, SPECIES_INFO, type Species } from '@game/catalog';
+import {
+  GOLD_COLOR,
+  LINE_INFO,
+  LINES,
+  parsePetId,
+  SPECIES_INFO,
+  type Line,
+  type Species,
+} from '@game/catalog';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { OwnedPet } from '@/lib/api';
 import { colors, spacing } from '@/theme';
@@ -8,7 +16,11 @@ type Props = { species: Species; owned: OwnedPet[]; onPress: () => void };
 /** One card per species, with a dot per T line: filled = collected, ring = gold. */
 export function SpeciesCard({ species, owned, onPress }: Props) {
   const info = SPECIES_INFO[species];
-  const byLine = new Map(owned.filter((p) => p.species === species).map((p) => [p.line, p]));
+  const byLine = new Map<Line, OwnedPet>();
+  for (const p of owned) {
+    const slot = parsePetId(p.pet_id);
+    if (slot?.species === species) byLine.set(slot.line, p);
+  }
 
   return (
     <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]} onPress={onPress}>

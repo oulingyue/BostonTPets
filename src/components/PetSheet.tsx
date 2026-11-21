@@ -1,5 +1,5 @@
-import { levelFromCopies, LINE_INFO, MAX_LEVEL, petName, SPECIES_INFO } from '@game/catalog';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { levelFromCopies, LINE_INFO, MAX_LEVEL, parsePetId, petName, SPECIES_INFO } from '@game/catalog';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
@@ -31,7 +31,10 @@ export function PetSheet({ pet, onClose }: { pet: PublicPet | null; onClose: () 
 }
 
 function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () => void; bottomInset: number }) {
-  const info = SPECIES_INFO[pet.species];
+  const slot = parsePetId(pet.pet_id);
+  if (!slot) return null;
+  const { species, line } = slot;
+  const info = SPECIES_INFO[species];
   const level = levelFromCopies(pet.copies);
   const extra = Math.max(0, pet.copies - MAX_LEVEL);
   const rarity = RARITY_STYLE[info.rarity];
@@ -41,16 +44,16 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
       <View style={styles.grabber} />
 
       <View style={styles.hero}>
-        <PetBadge species={pet.species} line={pet.line} owned isGold={pet.is_gold} size={112} />
+        <PetBadge species={species} line={line} owned isGold={pet.is_gold} size={112} />
         <Text style={styles.title} accessibilityRole="header">
           {pet.is_gold ? 'Gold ' : ''}
-          {petName(pet.line, pet.species)}
+          {petName(line, species)}
         </Text>
         <View style={styles.chips}>
           <Text style={[styles.chip, { backgroundColor: rarity.bg, color: rarity.fg }]}>{info.rarity}</Text>
           <Text style={[styles.chip, { backgroundColor: '#F1EFEA', color: colors.text }]}>
-            <Text style={{ color: LINE_INFO[pet.line].color }}>● </Text>
-            {LINE_INFO[pet.line].name}
+            <Text style={{ color: LINE_INFO[line].color }}>● </Text>
+            {LINE_INFO[line].name}
           </Text>
         </View>
       </View>
@@ -77,12 +80,6 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
       <View style={styles.facts}>
         <Fact label="First caught" value={formatDate(pet.first_caught_at)} />
         <Fact label="Gold" value={pet.is_gold ? 'Yes' : 'Not yet'} />
-        <View style={styles.fact}>
-          <Text style={styles.factLabel}>Pet ID</Text>
-          <Text style={styles.petId} selectable numberOfLines={1} ellipsizeMode="middle">
-            {pet.id}
-          </Text>
-        </View>
       </View>
 
       <Pressable style={({ pressed }) => [styles.done, pressed && { opacity: 0.85 }]} onPress={onClose} accessibilityRole="button">
@@ -135,7 +132,6 @@ const styles = StyleSheet.create({
   fact: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   factLabel: { fontSize: 14, color: colors.muted },
   factValue: { fontSize: 14, fontWeight: '600', color: colors.text },
-  petId: { flexShrink: 1, fontSize: 12, fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }), color: colors.text },
   done: { minHeight: 48, borderRadius: 12, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
   doneText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 });

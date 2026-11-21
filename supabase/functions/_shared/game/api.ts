@@ -7,7 +7,7 @@ export type ScanResponse =
   | {
       status: 'ok';
       stationName: string;
-      pet: { species: Species; line: Line; isGold: boolean };
+      pet: { petId: string; species: Species; line: Line; isGold: boolean };
       copies: number;
       isNew: boolean;
       becameGold: boolean;

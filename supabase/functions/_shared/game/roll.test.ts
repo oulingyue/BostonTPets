@@ -1,7 +1,7 @@
 // Run with: npm run test:game  (Node strips the TypeScript types natively)
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseScanPayload } from './catalog.ts';
+import { parsePetId, parseScanPayload, petId } from './catalog.ts';
 import { rollPet } from './roll.ts';
 
 // Deterministic PRNG so the distribution test is stable.
@@ -49,6 +49,12 @@ test('demo accounts get boosted lobster odds', () => {
   let lobsters = 0;
   for (let i = 0; i < 50_000; i++) if (rollPet('red', { demo: true }, rng).species === 'lobster') lobsters++;
   assert.ok(Math.abs(lobsters / 50_000 - 0.25) < 0.01);
+});
+
+test('petId and parsePetId round-trip skeleton slots', () => {
+  assert.equal(petId('lobster', 'red'), 'red_lobster');
+  assert.deepEqual(parsePetId('green_duckling'), { line: 'green', species: 'duckling' });
+  assert.equal(parsePetId('mallard_duck'), null);
 });
 
 test('parseScanPayload accepts only btp: codes with a 32-hex id', () => {
