@@ -43,7 +43,8 @@
     "preview:web": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start --web",
     "preview": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start",
     "lint": "expo lint",
-    "sfx": "node scripts/sfx/generate.mjs"
+    "sfx": "node scripts/sfx/generate.mjs",
+    "pets": "node scripts/pixel-pets/generate.mjs"
   },
   "private": true
 }

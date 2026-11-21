@@ -9,4 +9,17 @@ import type { ImageSourcePropType } from 'react-native';
 
 export type PetArt = { base: ImageSourcePropType; blink?: ImageSourcePropType };
 
-export const PET_ART: Partial<Record<string, PetArt>> = {};
+// Legendaries: pixel art drawn by scripts/pixel-pets/generate.mjs (npm run pets).
+export const PET_ART: Partial<Record<string, PetArt>> = {
+  lobster: { base: require('../../assets/pets/lobster.png'), blink: require('../../assets/pets/lobster-blink.png') },
+  snapping_turtle: {
+    base: require('../../assets/pets/snapping_turtle.png'),
+    blink: require('../../assets/pets/snapping_turtle-blink.png'),
+  },
+  red_fox: { base: require('../../assets/pets/red_fox.png'), blink: require('../../assets/pets/red_fox-blink.png') },
+  humpback_whale: {
+    base: require('../../assets/pets/humpback_whale.png'),
+    blink: require('../../assets/pets/humpback_whale-blink.png'),
+  },
+  snowy_owl: { base: require('../../assets/pets/snowy_owl.png'), blink: require('../../assets/pets/snowy_owl-blink.png') },
+};
