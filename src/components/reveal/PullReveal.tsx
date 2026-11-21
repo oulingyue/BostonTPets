@@ -62,7 +62,7 @@ export type RevealPet = {
   /** Shown until the creature has art. */
   emoji: string;
   rarity: PullRarity;
-  /** Gold pulls (1%) get a "Gold" name and gold sparkles. */
+  /** Gold pulls (1%) get a GOLD badge next to the name and gold sparkles. */
   isGold?: boolean;
 };
 
@@ -73,8 +73,6 @@ type Props = {
   stationName: string;
   copies: number;
   isNew: boolean;
-  /** A gold pull that upgraded a pet you already had. */
-  becameGold?: boolean;
   onDone: () => void;
   /** Slows the whole sequence down (2 = half speed). For the reveal playground. */
   timeScale?: number;
@@ -110,8 +108,38 @@ const C = {
 };
 
 const LED_COUNT = 12;
-const PARTICLE_COUNT = 18;
 const SPARKLE_COUNT = 6;
+const RAY_COUNT = 6; // each ray bar crosses the center, so 6 bars make 12 rays
+const CONFETTI_COUNT = 30;
+
+type Impact = {
+  /** Peak opacity of the station flash, and how many times it flashes. */
+  flash: number;
+  flashes: number;
+  /** Station shake, in points (0 = none). */
+  shake: number;
+  /** The station goes dark before the flashes (legendary only). */
+  blackout: boolean;
+  particles: number;
+  burst: number; // how far particles fly, in points
+  /** White flash when the doors open (0 = none). */
+  doorFlash: number;
+  /** Opacity of the light rays behind the pet (0 = none). */
+  rays: number;
+  /** Scene "punch" zoom when the pet lands (0 = none). */
+  zoom: number;
+  /** Big text slammed over the pet. */
+  slam: string | null;
+  confetti: boolean;
+};
+
+/** How hard each rarity hits: commons are gentle, legendaries are over the top. */
+const IMPACT: Record<PullRarity, Impact> = {
+  common: { flash: 0.4, flashes: 1, shake: 0, blackout: false, particles: 8, burst: 70, doorFlash: 0, rays: 0, zoom: 0, slam: null, confetti: false },
+  rare: { flash: 0.6, flashes: 1, shake: 0, blackout: false, particles: 14, burst: 95, doorFlash: 0, rays: 0.2, zoom: 0, slam: null, confetti: false },
+  epic: { flash: 0.75, flashes: 2, shake: 3, blackout: false, particles: 22, burst: 125, doorFlash: 0.45, rays: 0.4, zoom: 0.04, slam: 'EPIC!', confetti: false },
+  legendary: { flash: 0.95, flashes: 3, shake: 8, blackout: true, particles: 36, burst: 165, doorFlash: 0.95, rays: 0.7, zoom: 0.09, slam: 'LEGENDARY!', confetti: true },
+};
 const ARROW_COUNT = 8;
 const PANEL_HEIGHT = 290;
 
@@ -125,7 +153,8 @@ const T = {
   afterTap: 450,
   step: 460,
   flashHold: 420,
-  legendaryHold: 600,
+  flashGap: 320, // between repeated flashes
+  blackout: 520, // legendary: the station goes dark before the strobes
   arrive: 1250,
   doorsDelay: 220,
   doors: 380,
@@ -159,9 +188,11 @@ let hasSeenFullReveal = false;
  *   3. a train in the line's color pulls in (the Silver Line sends a bus),
  *   4. the doors open and the pet hops out onto the platform,
  *   5. for duplicates, the EXP bar fills; each full bar is a level-up (banner, rising arrows, a new star).
- * Legendary pulls flash twice and shake the station. Gold pulls sparkle.
+ * The whole sequence scales with rarity (see IMPACT): commons are gentle; legendaries black out the
+ * station, strobe, shake, flash white at the doors, and land with rays, confetti, and a "LEGENDARY!" slam.
+ * Gold pulls get a GOLD badge and gold sparkles.
  */
-export function PullReveal({ pet, line, stationName, copies, isNew, becameGold = false, onDone, timeScale = 1 }: Props) {
+export function PullReveal({ pet, line, stationName, copies, isNew, onDone, timeScale = 1 }: Props) {
   const reduceMotion = useReducedMotion();
   const screen = useWindowDimensions();
   const [fontsLoaded] = useFonts({ Silkscreen_400Regular, Silkscreen_700Bold });
@@ -172,8 +203,9 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
   const rarityColor = RARITY_COLOR[pet.rarity];
   const isLegendary = pet.rarity === 'legendary';
   const isGold = pet.isGold === true;
-  const hasSparkles = isLegendary || isGold;
-  const displayName = `${isGold ? 'Gold ' : ''}${pet.name}`;
+  const impact = IMPACT[pet.rarity];
+  const hasSparkles = isGold || pet.rarity === 'epic' || isLegendary;
+  const raysColor = isGold ? GOLD_COLOR : rarityColor;
   const vehicle = line === 'silver' ? BUS : TRAIN;
   const palette = useMemo(() => vehiclePalette(lineInfo.color), [lineInfo.color]);
   const cardColors = useMemo(() => cardPalette(lineInfo.color), [lineInfo.color]);
@@ -205,14 +237,28 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
   const readerTop = Math.min(H - 16 * P - 8, platformTop + 6 * P) - 10 * P; // post foot on the platform
 
   const particles = useMemo<ParticleSpec[]>(() => {
-    const colors = [rarityColor, lineInfo.color, '#FFFFFF', C.doorGlow];
-    return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-      angle: (i / PARTICLE_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.4,
-      distance: 70 + Math.random() * 90,
+    const colors = [rarityColor, lineInfo.color, '#FFFFFF', isGold ? GOLD_COLOR : C.doorGlow];
+    const count = impact.particles;
+    return Array.from({ length: count }, (_, i) => ({
+      angle: (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4,
+      distance: impact.burst * (0.55 + Math.random() * 0.6),
       size: Math.max(4, Math.round(P * (0.8 + Math.random() * 0.8))),
       color: colors[i % colors.length],
     }));
-  }, [rarityColor, lineInfo.color, P]);
+  }, [rarityColor, lineInfo.color, P, impact, isGold]);
+
+  const confetti = useMemo<ConfettiSpec[]>(() => {
+    if (!impact.confetti) return [];
+    const colors = [GOLD_COLOR, '#FFF2B8', lineInfo.color, '#FFFFFF', rarityColor];
+    return Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
+      x: Math.random() * W,
+      delay: Math.random() * 0.45,
+      drift: (Math.random() - 0.5) * 60,
+      spin: (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 540),
+      size: Math.max(4, Math.round(P * (0.7 + Math.random() * 0.6))),
+      color: colors[i % colors.length],
+    }));
+  }, [impact.confetti, W, P, lineInfo.color, rarityColor]);
 
   const sparkles = useMemo(
     () =>
@@ -264,6 +310,14 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
   const lvGlow = useSharedValue(0);
   const lvHop = useSharedValue(0);
   const starPop = useSharedValue(1);
+  // rarity impact
+  const blackout = useSharedValue(0);
+  const doorFlash = useSharedValue(0);
+  const rays = useSharedValue(0);
+  const raysSpin = useSharedValue(0);
+  const confettiFall = useSharedValue(0);
+  const slam = useSharedValue(0);
+  const zoom = useSharedValue(0);
 
   const [finished, setFinished] = useState(false);
   const canSkip = useRef(hasSeenFullReveal).current;
@@ -308,13 +362,24 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     lvGlow.value = 0;
     lvHop.value = 0;
     starPop.value = 1;
+    blackout.value = 0;
+    doorFlash.value = 0;
+    rays.value = impact.rays > 0 ? 1 : 0;
+    confettiFall.value = 1;
+    slam.value = 0;
+    zoom.value = 0;
     startTwinkle();
+    if (impact.rays > 0 && !reduceMotion) startRaysSpin();
     markFinished();
+  };
+
+  const startRaysSpin = () => {
+    raysSpin.value = withRepeat(withTiming(1, { duration: 12000, easing: Easing.linear }), -1);
   };
 
   useEffect(() => {
     const announce = () =>
-      AccessibilityInfo.announceForAccessibility(`${displayName}, ${RARITY_LABEL[pet.rarity]}`);
+      AccessibilityInfo.announceForAccessibility(`${pet.name}${isGold ? ', gold' : ''}, ${RARITY_LABEL[pet.rarity]}`);
     preloadSfx();
     if (reduceMotion) {
       showFinalState();
@@ -358,28 +423,33 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
       if (i < steps.length - 1) t += T.step;
     });
     t += 300;
-    const flashOnce = () => {
-      flash.value = withSequence(timing(0.75, { duration: 80 }), timing(0, { duration: 480 }));
-      glow.value = withSequence(timing(0.45, { duration: 80 }), timing(0.18, { duration: 700 }));
-    };
-    at(t, () => {
-      flashOnce();
-      haptics.heavy();
-      playSfx('flash');
-    });
-    if (isLegendary) {
-      at(t + 380, () => {
-        flashOnce();
-        haptics.success();
-        playSfx('legendary');
-        shake.value = withSequence(
-          ...Array.from({ length: 12 }, (_, k) => timing(k % 2 ? -1 : 1, { duration: 45 })),
-          timing(0, { duration: 45 }),
-        );
+    // Legendary: the station goes dark (only the sign and its lights stay lit) and rumbles first.
+    if (impact.blackout) {
+      at(t, () => {
+        blackout.value = timing(0.82, { duration: 260 });
       });
-      t += T.legendaryHold;
+      [0, 130, 260, 390].forEach((d) => at(t + d, haptics.heavy));
+      t += T.blackout;
     }
-    t += T.flashHold;
+    const shakeFor = (amp: number, beats: number) =>
+      withSequence(...Array.from({ length: beats }, (_, k) => timing(k % 2 ? -amp : amp, { duration: 45 })), timing(0, { duration: 45 }));
+    for (let k = 0; k < impact.flashes; k++) {
+      const last = k === impact.flashes - 1;
+      at(t + k * T.flashGap, () => {
+        flash.value = withSequence(timing(impact.flash, { duration: 70 }), timing(0, { duration: 420 }));
+        glow.value = withSequence(timing(0.5, { duration: 70 }), timing(0.18, { duration: 700 }));
+        (last && impact.flashes > 1 ? haptics.success : haptics.heavy)();
+        if (k === 0) playSfx('flash');
+        if (last && isLegendary) playSfx('legendary');
+        if (impact.shake) shake.value = shakeFor(impact.shake * (last ? 1 : 0.6), last ? 12 : 6);
+      });
+    }
+    t += (impact.flashes - 1) * T.flashGap + T.flashHold;
+    if (impact.blackout) {
+      at(t - 150, () => {
+        blackout.value = timing(0, { duration: 450 });
+      });
+    }
 
     // 3. The train (or bus) pulls in from the right, rumbling and slowing to a stop.
     at(t, () => {
@@ -400,7 +470,11 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
       playSfx('doors');
       doors.value = timing(1, { duration: T.doors, easing: Easing.inOut(Easing.cubic) });
       burst.value = delay(140, timing(1, { duration: 800, easing: Easing.out(Easing.cubic) }));
+      if (impact.doorFlash) {
+        doorFlash.value = delay(120, withSequence(timing(impact.doorFlash, { duration: 90 }), timing(0, { duration: 600 })));
+      }
     });
+    if (impact.doorFlash) at(t + 120, isLegendary ? haptics.success : haptics.medium);
     t += T.doors + T.emergeDelay;
     at(t, () => {
       emerge.value = timing(1, { duration: T.emerge, easing: Easing.inOut(Easing.quad) });
@@ -415,6 +489,20 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         startTwinkle();
         playSfx('sparkle');
       }
+      // Rarity impact on landing: zoom punch, light rays, the slam text, and (legendary) confetti.
+      if (impact.zoom) zoom.value = withSequence(timing(impact.zoom, { duration: 90 }), withSpring(0, { damping: 9, stiffness: 160 }));
+      if (impact.rays) {
+        rays.value = timing(1, { duration: 450 });
+        startRaysSpin();
+      }
+      if (impact.slam) {
+        slam.value = withSequence(
+          timing(1, { duration: 240, easing: Easing.out(Easing.back(2.4)) }),
+          delay(900, timing(0, { duration: 260 })),
+        );
+        haptics.heavy();
+      }
+      if (impact.confetti) confettiFall.value = timing(1, { duration: 2800, easing: Easing.linear });
       announce();
     });
     t += T.settle;
@@ -422,7 +510,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
       info.value = timing(1, { duration: T.info, easing: Easing.out(Easing.cubic) });
     });
     t += T.info;
-    if (isNew || becameGold) {
+    if (isNew || isGold) {
       at(t, () => {
         stamp.value = withSpring(1, { damping: 9, stiffness: 260 });
         haptics.success();
@@ -490,7 +578,17 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     // One sequence per reveal: callers mount a fresh reveal for every pull, so this runs once.
   }, []);
 
-  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value * 5 }] }));
+  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }, { scale: 1 + zoom.value }] }));
+  const blackoutStyle = useAnimatedStyle(() => ({ opacity: blackout.value }));
+  const doorFlashStyle = useAnimatedStyle(() => ({ opacity: doorFlash.value }));
+  const raysStyle = useAnimatedStyle(() => ({
+    opacity: rays.value * impact.rays,
+    transform: [{ rotate: `${raysSpin.value * 360}deg` }, { scale: 0.6 + 0.4 * rays.value }],
+  }));
+  const slamStyle = useAnimatedStyle(() => ({
+    opacity: slam.value > 0.02 ? Math.min(1, slam.value * 1.4) : 0,
+    transform: [{ scale: 2.6 - 1.6 * slam.value }, { rotate: '-4deg' }],
+  }));
   const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glow.value,
@@ -582,6 +680,9 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         {/* The station glows in the rarity color as the lights climb */}
         <Animated.View style={[styles.abs, styles.noTouch, { left: 0, right: 0, top: 0, height: trackY }, glowStyle]} />
 
+        {/* Legendary: the station goes dark; the sign and its lights (drawn next) stay lit */}
+        <Animated.View style={[styles.abs, styles.noTouch, styles.fill, { backgroundColor: '#000000' }, blackoutStyle]} />
+
         {/* Station sign and rarity lights */}
         <View style={[styles.abs, styles.signWrap]}>
           <Animated.View style={[styles.sign, signStyle]}>
@@ -640,6 +741,9 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
           </View>
         </View>
 
+        {/* The legendary blackout also darkens the track and platform (drawn above the first blackout layer) */}
+        <Animated.View style={[styles.abs, styles.noTouch, { left: 0, right: 0, top: trackY, bottom: 0, backgroundColor: '#000000' }, blackoutStyle]} />
+
         {/* Particles from the doorway */}
         <View style={[styles.abs, { left: door.x, top: door.y, width: 0, height: 0 }]}>
           {particles.map((p, i) => (
@@ -647,7 +751,37 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
           ))}
         </View>
 
-        {/* The pet, its shadow, and sparkles for legendaries and gold */}
+        {/* Light rays behind the pet: rare and up, strongest for legendaries */}
+        {impact.rays > 0 && (
+          <Animated.View
+            style={[
+              styles.abs,
+              styles.noTouch,
+              { left: pet0.x - petSize * 1.3, top: pet0.y - petSize * 1.3, width: petSize * 2.6, height: petSize * 2.6 },
+              raysStyle,
+            ]}
+          >
+            {Array.from({ length: RAY_COUNT }, (_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.abs,
+                  {
+                    left: petSize * 1.3 - petSize * 0.11,
+                    top: 0,
+                    width: petSize * 0.22,
+                    height: petSize * 2.6,
+                    backgroundColor: raysColor,
+                    opacity: i % 2 ? 0.55 : 1,
+                    transform: [{ rotate: `${(i * 180) / RAY_COUNT}deg` }],
+                  },
+                ]}
+              />
+            ))}
+          </Animated.View>
+        )}
+
+        {/* The pet, its shadow, and sparkles for epics, legendaries and gold */}
         <Animated.View style={[styles.abs, { left: pet0.x - 5 * P, top: petFeetY - Math.round(petSize * 0.12) - 2 * P }, shadowStyle]}>
           <PixelSprite rows={SHADOW} palette={SHADOW_PALETTE} pixel={P} />
         </Animated.View>
@@ -676,8 +810,23 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         <Animated.View
           style={[styles.abs, { left: pet0.x - petSize / 2, top: pet0.y - petSize / 2, transformOrigin: 'center bottom' }, petStyle]}
         >
-          <LivePet id={pet.id} name={displayName} emoji={pet.emoji} size={petSize} active={finished} />
+          <LivePet id={pet.id} name={pet.name} emoji={pet.emoji} size={petSize} active={finished} />
         </Animated.View>
+
+        {/* Legendary confetti */}
+        {confetti.map((c, i) => (
+          <ConfettiPiece key={i} fall={confettiFall} height={H} {...c} />
+        ))}
+
+        {/* "EPIC!" / "LEGENDARY!" slammed over the pet */}
+        {impact.slam && (
+          <Animated.View style={[styles.abs, styles.noTouch, styles.banner, { top: pet0.y - petSize * 1.05 }, slamStyle]}>
+            <OutlinedText
+              text={impact.slam}
+              style={[styles.slamText, pixelFontBold, { color: isLegendary ? '#FFD84D' : '#E2C2FF', fontSize: isLegendary ? 34 : 28 }]}
+            />
+          </Animated.View>
+        )}
 
         {/* Level-up: arrows rise from the pet and a banner pops over it */}
         {arrows.map((a, i) => (
@@ -709,6 +858,9 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         <Animated.View style={[styles.abs, { left: W / 2 - 4 * P, top: readerTop - P }, cardStyle]}>
           <PixelSprite rows={CARD} palette={cardColors} pixel={P} />
         </Animated.View>
+
+        {/* Epic / legendary: a white flash as the doors open */}
+        <Animated.View style={[styles.abs, styles.noTouch, styles.fill, { backgroundColor: '#FFFFFF' }, doorFlashStyle]} />
       </Animated.View>
 
       {/* Result card */}
@@ -722,20 +874,22 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
                   <Text style={[styles.stampText, pixelFontBold]}>NEW!</Text>
                 </Animated.View>
               )}
-              {becameGold && (
-                <Animated.View style={[styles.stamp, { backgroundColor: RARITY_COLOR.legendary }, stampStyle]}>
-                  <Text style={[styles.stampText, pixelFontBold, { color: C.ink }]}>TURNED GOLD!</Text>
-                </Animated.View>
-              )}
             </View>
             <View style={[styles.rarityChip, { backgroundColor: rarityColor }]}>
               <Text style={[styles.rarityText, pixelFontBold, { color: isLegendary ? C.ink : '#FFFFFF' }]}>
                 {RARITY_LABEL[pet.rarity].toUpperCase()}
               </Text>
             </View>
-            <Text style={[styles.name, pixelFontBold]} numberOfLines={2}>
-              {displayName}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text style={[styles.name, pixelFontBold]} numberOfLines={2}>
+                {pet.name}
+              </Text>
+              {isGold && (
+                <Animated.View style={[styles.goldBadge, stampStyle]}>
+                  <Text style={[styles.goldBadgeText, pixelFontBold]}>GOLD</Text>
+                </Animated.View>
+              )}
+            </View>
             <Animated.View style={starsStyle}>
               <Stars copies={copies} level={shown.level} size={20} />
             </Animated.View>
@@ -784,6 +938,24 @@ function LedSegment({ index, size, fill, level, levelInput, levelColors }: LedPr
       level.value > 0 && fill.value * LED_COUNT > index ? interpolateColor(level.value, levelInput, levelColors) : C.ledOff,
   }));
   return <Animated.View style={[{ width: size, height: size }, style]} />;
+}
+
+type ConfettiSpec = { x: number; delay: number; drift: number; spin: number; size: number; color: string };
+
+function ConfettiPiece({ fall, height, x, delay, drift, spin, size, color }: ConfettiSpec & { fall: SharedValue<number>; height: number }) {
+  const style = useAnimatedStyle(() => {
+    const p = Math.min(1, Math.max(0, (fall.value - delay) / (1 - delay)));
+    return {
+      opacity: p > 0 && p < 1 ? 1 : 0,
+      transform: [
+        { translateY: -size + p * (height + size * 2) },
+        { translateX: Math.sin(p * Math.PI * 3) * drift },
+        { rotate: `${p * spin}deg` },
+      ],
+    };
+  });
+  // Rectangles, so the spin reads as tumbling paper.
+  return <Animated.View style={[styles.abs, styles.noTouch, { left: x, top: 0, width: size, height: size * 0.6, backgroundColor: color }, style]} />;
 }
 
 type ParticleSpec = { angle: number; distance: number; size: number; color: string };
@@ -877,6 +1049,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.floor, overflow: 'hidden' },
   banner: { left: 0, right: 0, alignItems: 'center' },
   bannerText: { fontSize: 30, fontWeight: '900', color: '#FFD84D', letterSpacing: 2 },
+  slamText: { fontWeight: '900', letterSpacing: 2 },
+  fill: { left: 0, right: 0, top: 0, bottom: 0 },
   outline: { position: 'absolute', color: C.ink },
   expRow: { alignSelf: 'stretch' },
   expPop: { position: 'absolute', right: 0, top: -20, color: '#16A34A', fontSize: 14, fontWeight: '800' },
@@ -920,7 +1094,10 @@ const styles = StyleSheet.create({
   stampText: { color: '#FFFFFF', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   rarityChip: { paddingHorizontal: 10, paddingVertical: 3, borderWidth: 3, borderColor: C.ink },
   rarityText: { fontSize: 12, fontWeight: '800', letterSpacing: 2 },
-  name: { fontSize: 22, fontWeight: '800', color: C.ink, textAlign: 'center' },
+  name: { fontSize: 22, fontWeight: '800', color: C.ink, textAlign: 'center', flexShrink: 1 },
+  nameRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  goldBadge: { backgroundColor: GOLD_COLOR, borderWidth: 3, borderColor: C.ink, paddingHorizontal: 8, paddingVertical: 2 },
+  goldBadgeText: { color: C.ink, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
   button: { marginTop: 4, backgroundColor: C.ink, paddingHorizontal: 28, paddingVertical: 12 },
   buttonPressed: { transform: [{ translateY: 2 }] },
   buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15, letterSpacing: 2 },

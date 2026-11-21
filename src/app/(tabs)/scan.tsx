@@ -75,7 +75,6 @@ export default function ScanScreen() {
           stationName={r.stationName}
           copies={r.copies}
           isNew={r.isNew}
-          becameGold={r.becameGold}
           onDone={reset}
         />
       </SafeAreaView>
