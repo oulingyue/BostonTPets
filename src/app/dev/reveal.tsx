@@ -1,7 +1,7 @@
 import { getPet, isLine, LINE_INFO, LINE_TABLE, LINES, variantPetId, type Creature, type Line, type Rarity } from '@game/catalog';
 import { pullProgress } from '@game/leveling';
 import { rollPet, type PityState } from '@game/roll';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -81,6 +81,8 @@ export default function RevealPlayground() {
   const copies = copiesFor(creature.rarity, pullKind);
 
   const replay = () => setRun((n) => n + 1);
+  // Opened from Profile: go back there. Opened directly by link: there's nothing behind it, so go home.
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const pickLine = (next: Line) => {
     setLine(next);
     // Keep the same tier when switching lines (e.g. legendary -> that line's legendary).
@@ -104,6 +106,18 @@ export default function RevealPlayground() {
       <Stack.Screen options={{ headerShown: false }} />
       {showControls && (
         <View style={styles.controls}>
+          <View style={styles.header}>
+            <Pressable
+              onPress={goBack}
+              style={({ pressed }) => [styles.back, pressed && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={8}
+            >
+              <Text style={styles.backText}>‹ Back</Text>
+            </Pressable>
+            <Text style={styles.title}>Reveal playground</Text>
+          </View>
           <ChipRow>
             {LINES.map((l) => (
               <Chip key={l} label={LINE_INFO[l].name} color={LINE_INFO[l].color} active={l === line} onPress={() => pickLine(l)} />
@@ -205,4 +219,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#121826' },
   swatch: { width: 10, height: 10, borderRadius: 5 },
   stage: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingBottom: 2 },
+  back: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#232C42' },
+  backText: { color: '#F3F5FA', fontSize: 14, fontWeight: '700' },
+  title: { color: '#C9D1E3', fontSize: 14, fontWeight: '700' },
 });
