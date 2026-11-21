@@ -1,7 +1,7 @@
 # BostonTPets
 
 BostonHacks project: gacha pets you collect by scanning QR codes at T stations.
-4 Boston animals (Duckling, Wild Turkey, Harbor Seal, Lobster) × 5 T line colors = 20 pets.
+The skeleton has 4 Boston animals (Duckling, Wild Turkey, Harbor Seal, Lobster) × 5 T line colors = 20 pets. The planned roster is in [Loot table](#loot-table-planned).
 
 See [DESIGN.md](DESIGN.md) for the agreed game design.
 
@@ -27,6 +27,46 @@ See [DESIGN.md](DESIGN.md) for the agreed game design.
 - [ ] Create the Supabase project, deploy the `scan` function, and test a scan end-to-end on a phone
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
+
+## Loot table (planned)
+
+The planned roster and odds. The code doesn't use them yet: `catalog.ts` and [DESIGN.md](DESIGN.md) still have the skeleton's 4 species × 5 lines.
+
+Each T line gets its own creatures, and scanning a code on a line rolls from that line's table. The odds are the same on every line.
+
+| Tier | Chance each | Red | Green | Orange | Blue | Silver |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Legendary** | 2% | Lobster | Snapping Turtle | Red Fox | Humpback Whale | Snowy Owl |
+| **Epic** | 4% | MIT Beaver | BU Terrier | Northeastern Husky | Harbor Seal | Atlantic Cod |
+| **Epic** | 4% | Red-tailed Hawk | BC Eagle | Wentworth Leopard | Penguin | Peregrine Falcon |
+| **Rare** | 10% | Alewife | Boston Terrier | Monarch Butterfly | Blue Jay | Herring Gull |
+| **Rare** | 10% | Northern Cardinal | Swan | Orange Tabby Cat | Horseshoe Crab | Striped Bass |
+| **Rare** | 10% | Raccoon | Bullfrog | Haymarket Rat | Piping Plover | Moon Jellyfish |
+
+**Common (12% each, shared by every line):** Mallard Duck, Canada Goose, Wild Turkey, Pigeon, Gray Squirrel.
+
+**Tier totals:** Common 60%, Rare 30%, Epic 8%, Legendary 2%.
+
+**Line variants:** a line's own creatures (Rare, Epic and Legendary) have a 5% chance to come in that line's color. The shared commons never come in a line color.
+- Red Line Alewife: 10% × 5% = 0.5%
+- Red Line Lobster: 2% × 5% = 0.1% (1 in 1,000), the rarest roll in the game
+- Overall, 2% of rolls are a line variant (40% line-specific × 5%).
+
+**Pity:** an Epic or better is guaranteed within 10 rolls, and a Legendary by roll 60. With pity, players average about one Legendary every 35 rolls.
+
+**Collection size:** 35 creatures plus 30 line variants (one for each of the 6 creatures on each line), 65 in total.
+
+**Local tie-ins:**
+- **Red:** Alewife, the last stop, is named after a fish. MIT is at Kendall/MIT.
+- **Green:** the turtle is a joke about how slow the Green Line is. BU and BC are on the B branch. The swan is for the Public Garden swan boats, and the bullfrog for the Frog Pond.
+- **Orange:** Northeastern and Wentworth are both at Ruggles. The rat is for Haymarket.
+- **Blue:** the whale, seal and penguin are for Aquarium station and the whale watches. Piping plovers nest on Revere Beach.
+- **Silver:** snowy owls spend winters at Logan Airport. The cod is for the Seaport fish pier.
+
+**To implement:**
+- `catalog.ts` would hold a creature list per line, plus the shared commons, instead of 4 species × 5 lines.
+- `roll.ts` would roll from the scanned line's table, replacing the 70% line roll.
+- Pity needs a per-user roll counter in the database. It's listed as out of scope in DESIGN.md.
 
 ## Stack
 
