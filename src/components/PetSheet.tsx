@@ -1,18 +1,11 @@
-import { getPet, levelFromCopies, LINE_INFO, MAX_LEVEL, type Rarity } from '@game/catalog';
+import { getPet, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
 import type { PublicPet } from '@/lib/api';
 import { formatDate } from '@/lib/time';
-import { colors, spacing } from '@/theme';
-
-const RARITY_STYLE: Record<Rarity, { bg: string; fg: string }> = {
-  common: { bg: '#ECEAE4', fg: '#4F4F4F' },
-  rare: { bg: '#E6EEFA', fg: '#003DA5' },
-  epic: { bg: '#F0E8FA', fg: '#6B2FA3' },
-  legendary: { bg: '#FBEFD6', fg: '#8A5A00' },
-};
+import { colors, rarityStyle, spacing } from '@/theme';
 
 /**
  * Bottom sheet with one pet's details. The same sheet is used for your pets and other people's,
@@ -37,7 +30,7 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
   const { line } = info;
   const level = levelFromCopies(pet.copies);
   const extra = Math.max(0, pet.copies - MAX_LEVEL);
-  const rarity = RARITY_STYLE[info.rarity];
+  const rarity = rarityStyle[info.rarity];
 
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, spacing.md) + spacing.md }]} accessibilityViewIsModal>
