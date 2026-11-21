@@ -9,23 +9,13 @@ See [DESIGN.md](DESIGN.md) for the agreed game design.
 
 **Status:** app skeleton and scan backend are done; the database schema is next. Scanning isn't playable end-to-end yet.
 
-### Done
-- [x] Game design agreed (species, T lines, odds, gold, levels, cooldowns, screens). See [DESIGN.md](DESIGN.md)
-- [x] Expo app scaffold (SDK 58, Expo Router, TypeScript)
-- [x] Email + password sign-up / sign-in, with protected routes
-- [x] Tabs: Collection, Scan (center button), Profile
-- [x] Collection: "X / 20" summary, 4 species cards with line dots, and a species detail screen (stars, gold, first caught)
-- [x] Scan: QR camera, a client-side `btp:` code check, and cooldown / invalid-code / no-signal messages
-- [x] Fare-gate reveal animation (placeholder visuals)
-- [x] Profile: stat tiles, scan history, sign out
-- [x] Placeholder pet art: emoji on a circle in the line color
-- [x] `scan` Edge Function: validates the code, rolls server-side, records via the `record_scan` RPC
-- [x] Shared game catalog + roll logic, with tests for the odds
-
-### Next
-- [ ] Database schema: tables, row-level security, the `record_scan` and `my_stats` functions, and seed codes for the demo poster
+### TODO
+- [ ] Connect Database 
 - [ ] Create the Supabase project, deploy the `scan` function, and test a scan end-to-end on a phone
-- [ ] Print the demo poster: one QR code per station
+- [ ] Add Friends feature
+- [ ] Refine Collections Page
+- [ ] Leaderboard feature
+- [ ] Sort out QR code logic and print QR code for demo 
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
 
 ## Loot table (planned)
