@@ -27,7 +27,17 @@ function RootNavigator() {
   const signedIn = session !== null;
 
   return (
-    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: colors.background },
+        // iOS 26 makes the header transparent by default, so screens slide under it. A solid
+        // header (matching the tab headers) keeps content below it on every pushed screen.
+        headerTransparent: false,
+        headerStyle: { backgroundColor: colors.background },
+        // Otherwise iOS labels the back button with the previous route's name, e.g. "(tabs)".
+        headerBackButtonDisplayMode: 'minimal',
+      }}
+    >
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="species/[species]" options={{ title: '' }} />

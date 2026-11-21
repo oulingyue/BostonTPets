@@ -38,7 +38,7 @@ export default function CollectionScreen() {
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      {/* Temporary rarity list so the 65-pet catalog typechecks. Collection layout belongs to the collection teammate. */}
+      {/* Temporary rarity list so the catalog typechecks. Collection layout belongs to the collection teammate. */}
       {RARITY_ORDER.map((rarity) => {
         const group = Object.values(CATALOG)
           .filter((pet) => pet.rarity === rarity)

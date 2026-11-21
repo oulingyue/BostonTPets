@@ -1,7 +1,7 @@
 # BostonTPets
 
 BostonHacks project: gacha pets you collect by scanning QR codes at T stations.
-The roll is the **full roster** (65 pets, per-line tables, pity). Collection layout and art are still placeholders. Spec: [DESIGN.md](DESIGN.md).
+The roll is the **full roster** (35 pets, per-line tables, pity). Collection layout and art are still placeholders. Spec: [DESIGN.md](DESIGN.md).
 
 See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon implementation order.
 
@@ -14,14 +14,14 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] Expo app scaffold (SDK 58, Expo Router, TypeScript)
 - [x] Email + password sign-up / sign-in, with protected routes
 - [x] Tabs: Collection, Scan (center button), Profile
-- [x] Collection: "X / 65" summary and a temporary rarity-grouped list (layout still belongs to the collection teammate)
+- [x] Collection: "X / 35" summary and a temporary rarity-grouped list (layout still belongs to the collection teammate)
 - [x] Scan: QR camera, a client-side `btp:` code check, and cooldown / invalid-code / no-signal messages
 - [x] Fare-gate reveal animation (placeholder visuals)
 - [x] Profile: @username, stat tiles, Pets | History, pet sheet, sign out
 - [x] Following: username search, follow / unfollow, other people's profiles and pets (`social` Edge Function + `follows` table)
 - [x] Placeholder pet art: emoji on a circle in the line color
 - [x] `scan` Edge Function: validates the code, rolls server-side, records via the `record_scan` RPC
-- [x] Full-roster catalog, per-line roll, line variants, and hard pity (`roll_pity`), with tests in `npm run test:game`
+- [x] Full-roster catalog, per-line roll, and hard pity (`roll_pity`), with tests in `npm run test:game`
 
 ### Next
 - [ ] Push Supabase migrations (including `roll_pity` and `follows`), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone. Wipe `user_pets` / `scans` if they still hold skeleton ids like `red_lobster`.
@@ -81,7 +81,7 @@ Runs the whole app in the browser on sample data, with no Supabase project and n
 
 ### Reveal playground
 
-Open `/dev/reveal`, or tap **Reveal playground** at the bottom of the Profile tab. It's available in every build, including production, so you can show it on any phone. Pick any line and creature from the catalog, choose what the pull does (new pet, duplicate, level up, max level), toggle the line variant and gold, roll a random pull with the real odds and pity, and replay at 1×, ½× or ¼× speed. Every save replays the reveal. The reveal lives in `src/components/reveal/`: timings are `T`, rarity colors are `RARITY_COLOR`, and the pixel sprites are in `sprites.ts`.
+Open `/dev/reveal`, or tap **Reveal playground** at the bottom of the Profile tab. It's available in every build, including production, so you can show it on any phone. Pick any line and creature from the catalog, choose what the pull does (new pet, duplicate, level up, max level), toggle gold, roll a random pull with the real odds and pity, and replay at 1×, ½× or ¼× speed. Every save replays the reveal. The reveal lives in `src/components/reveal/`: timings are `T`, rarity colors are `RARITY_COLOR`, and the pixel sprites are in `sprites.ts`.
 
 ### Sound effects
 
@@ -97,7 +97,7 @@ The reveal, level-ups, tapping your pet, and opening pets in the collection all 
 
 Creatures show their emoji until they have art. The style is cute 16-bit pixel art.
 
-1. Save a square PNG with a transparent background as `assets/pets/<id>.png`. The id is the creature's id in `catalog.ts`, such as `lobster` or `mit_beaver`. Line variants reuse their creature's art.
+1. Save a square PNG with a transparent background as `assets/pets/<id>.png`. The id is the creature's id in `catalog.ts`, such as `lobster` or `mit_beaver`.
 2. Add a line for it in `src/lib/petArt.ts`. The app then shows the art everywhere: collection, history, and the pull reveal.
 3. Optional: an eyes-closed version saved as `assets/pets/<id>-blink.png`, and added as `blink`, makes the pet blink.
 

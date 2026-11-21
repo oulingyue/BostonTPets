@@ -19,21 +19,20 @@ Those files implement the full roster and pity rules below. Collection and art s
 
 ## Pet identity (`pet_id`)
 
-Every collectible in the game is exactly one row in the catalog with a **globally unique** `pet_id` (stable slug, e.g. `mallard_duck`, `red_line_alewife`).
+Every collectible in the game is exactly one row in the catalog with a **globally unique** `pet_id` (stable slug, e.g. `mallard_duck`, `alewife`).
 
 | Concept | Meaning |
 | --- | --- |
-| **`pet_id`** | The drawable collectible. **65** ids. |
+| **`pet_id`** | The drawable collectible. **35** ids. |
 | **Collection slot** | At most one `user_pets` row per `(user_id, pet_id)`. |
 | **Duplicate draw** | Same `pet_id` rolled again → increment `copies`, run gold merge; the duplicate adds EXP and may level the pet up. |
 | **`scans.id`** | Every scan is its own event (audit / history). Many scans can reference the same `pet_id`. |
 
 Rules:
 
-- Two different `pet_id`s are always different collectibles (e.g. base Alewife vs Red Line Alewife variant).
+- Two different `pet_id`s are always different collectibles.
 - **Shared commons** use one `pet_id` for all lines (e.g. `mallard_duck` whether you scanned on Red or Green).
-- **Line-exclusive** creatures use one base `pet_id` per creature; only the **line variant** gets a second id (e.g. `lobster` vs `red_line_lobster`).
-- Ids in code: shared commons use the base slug (`mallard_duck`). Line-exclusives use the base slug (`lobster`, `alewife`). The line variant is `{line}_line_{baseId}` (`red_line_lobster`, `red_line_alewife`).
+- **Line-exclusive** creatures use one `pet_id` per creature (`lobster`, `alewife`).
 
 Roll output always includes `pet_id`. `record_scan` upserts on `(user_id, pet_id)`.
 
@@ -43,12 +42,11 @@ Roll output always includes `pet_id`. `record_scan` upserts on `(user_id, pet_id
 
 `catalog.ts`, `roll.ts`, and `record_scan` implement the [loot table](#loot-table) and [pity](#pity-target) below.
 
-- **Collection size:** **65** `pet_id`s (5 shared commons + 30 line-exclusives + 30 line variants).
+- **Collection size:** **35** `pet_id`s (5 shared commons + 30 line-exclusives).
 - **Line roll:** the scanned code's line only.
-- **Line variant:** 5% when the creature is line-specific Rare, Epic, or Legendary.
 - **Gold:** 1% on any roll; upgrades that slot permanently.
 - **Pity:** `roll_pity.since_epic_plus` / `since_legendary`, updated inside `record_scan` (migration `20251122100000_roll_pity.sql`). See [Pity](#pity-target).
-- **UI:** Collection is a temporary rarity-grouped list (`X / 65`) so the new ids render. Filters and layout belong to the collection teammate. Art is still the catalog emoji; sprites can key off `petId`.
+- **UI:** Collection is a temporary rarity-grouped list (`X / 35`) so the new ids render. Filters and layout belong to the collection teammate. Art is still the catalog emoji; sprites can key off `petId`.
 - **Old rows:** skeleton ids such as `red_lobster` are not migrated. Wipe `user_pets` and `scans` on a database that already has them.
 
 Demo accounts (`profiles.is_demo`, admin-only): legendary weight **22** (commons drop from 12 to 8), 10% gold, **no scan cooldowns**, **pity off**. Config: `DEMO_ODDS`.
@@ -80,19 +78,7 @@ Each line has six line-specific creatures (two Epic, three Rare, one Legendary).
 
 **Tier totals per roll:** Common 60%, Rare 30%, Epic 8%, Legendary 2%.
 
-### Line variants
-
-Line-specific creatures (Rare, Epic, Legendary only) have a **5%** chance to drop in **that line's color** (visual + collection slot). Commons are never line-colored.
-
-Examples:
-
-- Red Line Alewife (variant): 10% × 5% = **0.5%**
-- Red Line Lobster (variant): 2% × 5% = **0.1%** (~1 in 1,000) — rarest single outcome
-- Overall, **~2%** of rolls are a line variant (40% of outcomes are line-specific × 5%).
-
-**Collection size:** **65** unique `pet_id`s — 35 base + 30 line-variant ids (one variant id per line-specific Rare/Epic/Legendary on each line).
-
-Display names come from catalog metadata per `pet_id` (e.g. *Alewife* vs *Red Line Alewife*).
+**Collection size:** **35** unique `pet_id`s — 5 shared commons + 30 line-exclusives. Display names come from catalog metadata per `pet_id`.
 
 ### Pity (target)
 
@@ -101,7 +87,7 @@ Track per-user counters on the server (not client):
 - **Epic+:** guaranteed within **10** rolls without Epic or better.
 - **Legendary:** guaranteed by roll **60** without a Legendary.
 
-Pity resets from the **base** rarity (a line variant or gold does not change it). Documented in `roll.ts`:
+Pity resets from the creature's rarity (gold does not change it). Documented in `roll.ts`:
 
 - Legendary (natural or pity) → both counters `0`.
 - Epic → `sinceEpicPlus = 0`, `sinceLegendary += 1`.
@@ -112,7 +98,7 @@ Epic pity draws that line's two epics and its legendary at **4:4:2**, so some gu
 
 ### Gold (unchanged intent)
 
-**1%** on any roll upgrades the **collection slot** that received the pet (base or line variant). "All gold" remains an optional completion goal.
+**1%** on any roll upgrades the **collection slot** that received the pet. "All gold" remains an optional completion goal.
 
 Demo accounts: higher gold rate and no cooldowns; pity may be disabled or relaxed for booth demos (config in `DEMO_ODDS`).
 
@@ -126,8 +112,8 @@ Demo accounts: higher gold rate and no cooldowns; pity may be disabled or relaxe
 
 ### Art
 
-Placeholder: emoji (or a single generic glyph per tier) on a circle tinted with line color when `is_line_variant`.  
-Later: one sprite per creature + programmatic line tint for variants.
+Placeholder: emoji on a circle tinted with the creature's line color (shared commons stay neutral).  
+Later: one sprite per creature.
 
 ---
 
@@ -136,7 +122,6 @@ Later: one sprite per creature + programmatic line tint for variants.
 | Rule | Implemented |
 | --- | --- |
 | Table | Roll only from **scanned line's** table |
-| Line variant | 5% when creature is line-specific Rare+ |
 | Gold | 1% (10% on demo accounts) |
 | Pity | Epic+ @ 10, Legendary @ 60 (off for demo accounts) |
 | RNG | `roll.ts` in the `scan` Edge Function; clients never choose the outcome |
@@ -174,15 +159,15 @@ Tabs: **Collection**, **Scan** (center), **Profile**. Social screens open from P
 
 ### Collection
 
-- **Skeleton:** "X / 20", four species cards, dots per line (filled = collected, gold ring = gold), species detail route with all 5 line variants, stars, first-caught station and date.
-- **Target:** "X / 65", grouped by **tier** and/or **line** (filter chips). Each card shows base + variant progress. Detail: stars, gold ring, first station, first caught date.
+- **Skeleton:** "X / 20", four species cards, dots per line (filled = collected, gold ring = gold), species detail, stars, first-caught station and date.
+- **Target:** "X / 35", grouped by **tier** and/or **line** (filter chips). Detail: stars, gold ring, first station, first caught date.
 - **Refine (stretch):** search, "missing only", line-colored progress rings.
 
 ### Scan
 
 Camera + reticle; unmount when tab blurs.
 
-- Success → fare-gate reveal (a CharlieCard taps, the gate light shows the rarity color or gold, the gates open, the pet springs in; NEW! / TURNED GOLD! / LINE VARIANT! as needed).
+- Success → fare-gate reveal (a CharlieCard taps, the gate light shows the rarity color or gold, the gates open, the pet springs in; NEW! / TURNED GOLD! as needed).
 - Cooldown → "Train already left 🚋 … next departure in Xh Ym".
 - Invalid / inactive code / offline → message + Scan again.
 
@@ -270,7 +255,7 @@ Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.t
 
 ### Roster migration
 
-- Catalog: `CATALOG` in `catalog.ts`, 65 entries keyed by `pet_id`. Look up with `getPet`.
+- Catalog: `CATALOG` in `catalog.ts`, 35 entries keyed by `pet_id`. Look up with `getPet`.
 - Pity: `roll_pity (user_id, since_epic_plus, since_legendary)` in `supabase/migrations/20251122100000_roll_pity.sql`. Not copied to Tiger.
 - `record_scan` takes the pity the roll used (`p_expected_*`) and the next counters. A mismatch returns `pity_conflict` and writes nothing; `scan` re-rolls. The advisory lock is per `user_id`.
 - Skeleton `pet_id`s are not rewritten. Wipe `user_pets` and `scans` if they still hold `{line}_{species}` rows.
@@ -291,16 +276,16 @@ Order work so the **demo never breaks**.
 | --- | --- | --- |
 | **P0** | `supabase db push`, deploy `scan` + `player` + `social`, phone E2E | Judges can scan QR and see a pet |
 | **P0** | Demo poster QRs + `is_demo` account | Smooth booth loop |
-| **P1** | Expand `catalog.ts` + `roll.ts` + `roll.test.ts` (per-line table, variants) | In the repo. Redeploy `scan` after `db push`. |
+| **P1** | Expand `catalog.ts` + `roll.ts` + `roll.test.ts` (per-line table) | In the repo. Redeploy `scan` after `db push`. |
 | **P1** | ~~DB `pet_id` migration~~ (see `20251121220000_pet_id.sql`) + redeploy functions | Collection keyed by `pet_id` |
-| **P2** | Collection UI for 65 slots (filters, counts) | App matches target design |
+| **P2** | Collection UI for 35 slots (filters, counts) | App matches target design |
 | **P2** | Pity counters in DB + roll integration | In the repo (`roll_pity`). Needs `db push` + redeploy. |
 | **P2** | ~~**Following** — `follows` migration + `social` Edge Function~~ (built; test on device) | Social demo for judges |
 | **P2** | **Leaderboards** — RPC + UI (Collectors / Gold / Scans) | Arcade hook in pitch |
 | **P3** | Tiger scan replication + one chart | MLH Tiger story |
 | **P4** | Collection UI polish, full roster, pity | After social MVP works |
 
-The 65-pet catalog and pity are in the repo. Following + leaderboards stay **in MVP scope**. Collection filters and art can trail that.
+The 35-pet catalog and pity are in the repo. Following + leaderboards stay **in MVP scope**. Collection filters and art can trail that.
 
 ---
 
@@ -308,7 +293,7 @@ The 65-pet catalog and pity are in the repo. Following + leaderboards stay **in 
 
 Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, seasonal leaderboard resets.
 
-**In MVP scope (design only until built):** leaderboards (collectors / gold / scans). Pity and the 65-pet roster are implemented in the roll; collection layout can still trail.
+**In MVP scope (design only until built):** leaderboards (collectors / gold / scans). Pity and the 35-pet roster are implemented in the roll; collection layout can still trail.
 
 ---
 

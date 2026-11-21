@@ -18,15 +18,16 @@ export default function SpeciesDetail() {
   const { data: pets, loading } = useFocusedData(fetchMyPets);
   const info = petId ? getPet(petId) : undefined;
 
-  // Opening sound, once per visit: a chirp for a pet you own (plus a twinkle for legendaries and line
-  // variants), a muted blip for one you haven't found.
+  // Opening sound, once per visit: a chirp for a pet you own (plus a twinkle for legendaries and gold
+  // pets), a muted blip for one you haven't found.
   const playedFor = useRef<string | null>(null);
   useEffect(() => {
     if (!info || !pets || playedFor.current === info.petId) return;
     playedFor.current = info.petId;
-    if (pets.some((pet) => pet.pet_id === info.petId)) {
+    const mine = pets.find((pet) => pet.pet_id === info.petId);
+    if (mine) {
       playSfx('open');
-      if (info.rarity === 'legendary' || info.isLineVariant) playSfx('sparkle');
+      if (info.rarity === 'legendary' || mine.is_gold) playSfx('sparkle');
     } else {
       playSfx('locked');
     }

@@ -1,6 +1,6 @@
 // Gacha roll. Runs ONLY on the server (scan Edge Function) so clients can't pick their own pets.
 //
-// Pity (hard, not soft), counted on the base rarity. Line variants and gold do not change it.
+// Pity (hard, not soft), counted on the creature's rarity. Gold does not change it.
 // Counters are rolls *since* the last qualifying hit, read before this roll:
 //   - Legendary (natural or pity) → both counters reset to 0.
 //   - Epic → sinceEpicPlus = 0, sinceLegendary += 1.
@@ -12,15 +12,13 @@
 // legendaries. That pulls the average wait below the naive E[min(Geo(0.02), 60)] ≈ 35; with both
 // guarantees it lands near 28 rolls (see roll.test.ts).
 //
-// A line roll never leaves that line's table. A line-specific creature then has
-// `ODDS.lineVariantChance` to drop as `{line}_line_{baseId}`.
+// A line roll never leaves that line's table. The rolled creature is the collectible.
 
 import {
   DEMO_ODDS,
   LINE_TABLE,
   ODDS,
   TIER_WEIGHT,
-  variantPetId,
   type Line,
   type Rarity,
 } from './catalog.ts';
@@ -32,7 +30,6 @@ export type PityState = { sinceEpicPlus: number; sinceLegendary: number };
 export type RollResult = {
   petId: string;
   isGold: boolean;
-  isLineVariant: boolean;
   nextPity: PityState;
 };
 
@@ -51,16 +48,8 @@ export function rollPet(
   const pity = opts.pity ?? EMPTY_PITY;
   const usePity = demo ? DEMO_ODDS.pity : true;
   const picked = pickCreature(scannedLine, pity, usePity, demo, rng);
-
-  let petId = picked.id;
-  let isLineVariant = false;
-  if (picked.rarity !== 'common' && rng() < ODDS.lineVariantChance) {
-    petId = variantPetId(picked.id, scannedLine);
-    isLineVariant = true;
-  }
-
   const isGold = rng() < (demo ? DEMO_ODDS.goldChance : ODDS.goldChance);
-  return { petId, isGold, isLineVariant, nextPity: advancePity(pity, picked.rarity) };
+  return { petId: picked.id, isGold, nextPity: advancePity(pity, picked.rarity) };
 }
 
 function pickCreature(line: Line, pity: PityState, usePity: boolean, demo: boolean, rng: Rng): Picked {
