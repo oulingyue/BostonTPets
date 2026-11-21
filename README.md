@@ -36,6 +36,8 @@ See [DESIGN.md](DESIGN.md) for the agreed game design.
 
 ## Run the app
 
+Requires Node 22.18 or newer (check with `node -v`). Older versions can't run `npm run test:game`, because they don't run `.ts` files directly.
+
 ```sh
 npm install
 cp .env.example .env.local   # fill in your Supabase URL + publishable key
@@ -46,6 +48,20 @@ The camera works only on a physical device.
 
 > Until the database schema lands (see [Progress](#progress)), sign-in works,
 > but scanning and the collection screens will error because their tables don't exist yet.
+
+### Preview without a backend
+
+```sh
+npm run preview:web
+```
+
+Runs the whole app in the browser on sample data, with no Supabase project and no `.env.local` needed. Scans are rolled locally with the real catalog odds.
+
+### Windows
+
+- **Shell:** the commands above work as written in Git Bash. In PowerShell, copy the env file with `Copy-Item .env.example .env.local`; in Command Prompt, use `copy .env.example .env.local`.
+- **npm scripts:** on Windows, npm runs `package.json` scripts through Command Prompt, which doesn't understand `VAR=1 command`. To set an environment variable in a script, use `cross-env VAR=1 command`, as `preview:web` does.
+- **Phone can't connect:** Windows Firewall blocks Expo's dev server unless Node.js is allowed on the network, and it's blocked by default on networks Windows treats as public, like most hackathon Wi-Fi. Allow Node.js when Windows asks, or run `npx expo start --tunnel`.
 
 ## Deploy the scan function
 
