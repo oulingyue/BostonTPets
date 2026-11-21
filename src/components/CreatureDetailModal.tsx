@@ -1,7 +1,9 @@
-import { getPet, LINE_INFO, ODDS, TIER_WEIGHT, type Pet } from '@game/catalog';
+import { getPet, LINE_INFO, TIER_WEIGHT, type Pet } from '@game/catalog';
+import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
+import { playSfx } from '@/lib/sfx';
 import { colors, rarityStyle, spacing } from '@/theme';
 
 /**
@@ -10,20 +12,18 @@ import { colors, rarityStyle, spacing } from '@/theme';
  * Pity and booth (demo) odds are left out.
  */
 export function scanChance(pet: Pet): number {
-  const base = TIER_WEIGHT[pet.rarity];
-  if (pet.line === null) return base;
-  return base * (pet.isLineVariant ? ODDS.lineVariantChance : 1 - ODDS.lineVariantChance);
-}
-
-function formatPercent(value: number): string {
-  if (Number.isInteger(value)) return `${value}%`;
-  return `${value < 1 ? value.toFixed(1) : value.toFixed(1).replace(/\.0$/, '')}%`;
+  return TIER_WEIGHT[pet.rarity];
 }
 
 /** Bottom sheet for a pet the player hasn't found yet: where to find it and how likely it is. Owned pets use PetSheet. */
 export function CreatureDetailModal({ petId, onClose }: { petId: string | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const pet = petId ? getPet(petId) : undefined;
+
+  // A muted blip when the sheet opens on a pet you haven't found, like the species screen.
+  useEffect(() => {
+    if (petId) playSfx('locked');
+  }, [petId]);
 
   return (
     <Modal visible={!!pet} transparent animationType="slide" onRequestClose={onClose}>
@@ -43,7 +43,6 @@ export function CreatureDetailModal({ petId, onClose }: { petId: string | null; 
               <View style={styles.chips}>
                 <Text style={[styles.chip, { backgroundColor: rarityStyle[pet.rarity].bg, color: rarityStyle[pet.rarity].fg }]}>
                   {pet.rarity}
-                  {pet.isLineVariant ? ' variant' : ''}
                 </Text>
                 <Text style={[styles.chip, { backgroundColor: '#F1EFEA', color: colors.text }]}>
                   {pet.line ? (
@@ -61,7 +60,7 @@ export function CreatureDetailModal({ petId, onClose }: { petId: string | null; 
             <View style={styles.facts}>
               <Fact label="Status" value="Not found yet" />
               <Fact label="Found on" value={pet.line ? LINE_INFO[pet.line].name : 'Any line'} />
-              <Fact label="Chance per scan" value={formatPercent(scanChance(pet))} />
+              <Fact label="Chance per scan" value={`${scanChance(pet)}%`} />
             </View>
 
             <Text style={styles.hint}>

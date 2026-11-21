@@ -1,4 +1,3 @@
-import { LINES, TOTAL_PETS } from '@game/catalog';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
@@ -29,10 +28,9 @@ export function ProfileHeader(p: Props) {
   const name = p.displayName ?? (p.handle ? `@${p.handle}` : 'Rider');
   const gold = p.pets.filter((x) => x.is_gold).length;
   const tiles = [
-    { label: 'Collected', value: `${p.pets.length}/${TOTAL_PETS}` },
-    { label: 'Gold', value: String(gold) },
+    { label: 'Collected', value: String(p.pets.length) },
+    { label: 'Gold pets', value: String(gold) },
     { label: 'Scans', value: String(p.stats.total_scans) },
-    { label: 'Lines', value: `${p.stats.lines_visited}/${LINES.length}` },
   ];
 
   return (
@@ -58,11 +56,9 @@ export function ProfileHeader(p: Props) {
       </View>
 
       <View style={styles.counts}>
-        <Count value={p.pets.length} label="Pets" />
         <Count
           value={p.following}
           label="Following"
-          divider
           onPress={p.onPressFollows && (() => p.onPressFollows!('following'))}
         />
         <Count

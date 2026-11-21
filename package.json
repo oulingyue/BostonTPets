@@ -8,6 +8,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.119.2",
     "expo": "~58.0.26",
+    "expo-audio": "~58.0.12",
     "expo-camera": "~58.0.14",
     "expo-constants": "~58.0.16",
     "expo-font": "~58.0.12",
@@ -41,7 +42,8 @@
     "test:game": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test supabase/functions/_shared/game/roll.test.ts supabase/functions/_shared/game/leveling.test.ts",
     "preview:web": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start --web",
     "preview": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "sfx": "node scripts/sfx/generate.mjs"
   },
   "private": true
 }

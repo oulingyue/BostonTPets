@@ -10,7 +10,6 @@ import {
   parseScanPayload,
   TIER_WEIGHT,
   TOTAL_PETS,
-  variantPetId,
   type Line,
   type Rarity,
 } from './catalog.ts';
@@ -32,17 +31,17 @@ function seq(values: number[]): Rng {
 
 const FRESH: PityState = { sinceEpicPlus: 0, sinceLegendary: 0 };
 
-test('catalog has 65 unique pets, one variant per line-exclusive', () => {
+test('catalog has 35 unique pets and no line-colored variants', () => {
   const ids = Object.keys(CATALOG);
-  assert.equal(ids.length, 65);
-  assert.equal(TOTAL_PETS, 65);
-  assert.equal(new Set(ids).size, 65);
+  assert.equal(ids.length, 35);
+  assert.equal(TOTAL_PETS, 35);
+  assert.equal(new Set(ids).size, 35);
 
   for (const id of ids) {
     const pet = getPet(id);
     assert.ok(pet);
     assert.equal(pet.petId, id);
-    assert.equal(getPet(pet.baseId)?.baseId, pet.baseId);
+    assert.equal(id.includes('_line_'), false);
   }
 
   for (const line of LINES) {
@@ -58,24 +57,17 @@ test('catalog has 65 unique pets, one variant per line-exclusive', () => {
 
     for (const creature of table.commons) {
       assert.equal(getPet(creature.id)?.line, null);
-      assert.equal(getPet(variantPetId(creature.id, line)), undefined);
     }
     for (const creature of [...table.rares, ...table.epics, table.legendary]) {
-      const base = getPet(creature.id);
-      assert.equal(base?.line, line);
-      assert.equal(base?.isLineVariant, false);
-      assert.equal(base?.rarity, creature.rarity);
-      const variant = getPet(variantPetId(creature.id, line));
-      assert.ok(variant);
-      assert.equal(variant.isLineVariant, true);
-      assert.equal(variant.line, line);
-      assert.equal(variant.baseId, creature.id);
-      assert.equal(variant.rarity, creature.rarity);
+      const pet = getPet(creature.id);
+      assert.equal(pet?.line, line);
+      assert.equal(pet?.rarity, creature.rarity);
+      assert.equal(pet?.name, creature.name);
     }
   }
 
-  assert.equal(variantPetId('lobster', 'red'), 'red_line_lobster');
-  assert.equal(getPet('red_line_alewife')?.name, 'Red Line Alewife');
+  assert.equal(getPet('red_line_alewife'), undefined);
+  assert.equal(getPet('alewife')?.name, 'Alewife');
   assert.equal(getPet('mallard_duck')?.name, 'Mallard Duck');
 });
 
@@ -84,8 +76,6 @@ test('base rates ignore pity and stay on the scanned line', () => {
   const n = 200_000;
   const tiers: Record<Rarity, number> = { common: 0, rare: 0, epic: 0, legendary: 0 };
   let gold = 0;
-  let variants = 0;
-  let lineSpecific = 0;
   for (let i = 0; i < n; i++) {
     const roll = rollPet('red', { pity: FRESH }, rng);
     const pet = getPet(roll.petId);
@@ -93,8 +83,6 @@ test('base rates ignore pity and stay on the scanned line', () => {
     assert.ok(pet.line === null || pet.line === 'red');
     tiers[pet.rarity]++;
     if (roll.isGold) gold++;
-    if (pet.line !== null) lineSpecific++;
-    if (roll.isLineVariant) variants++;
   }
   const near = (actual: number, expected: number, tol = 0.01) =>
     assert.ok(Math.abs(actual / n - expected) < tol, `${actual / n} vs ${expected}`);
@@ -103,8 +91,6 @@ test('base rates ignore pity and stay on the scanned line', () => {
   near(tiers.epic, 0.08, 0.005);
   near(tiers.legendary, 0.02, 0.003);
   near(gold, 0.01, 0.002);
-  near(variants, 0.02, 0.003);
-  assert.ok(Math.abs(variants / lineSpecific - 0.05) < 0.005, `${variants / lineSpecific} vs 0.05`);
 });
 
 test('demo accounts boost legendary and gold and ignore pity', () => {
@@ -138,16 +124,15 @@ test('epic+ pity fires on the 10th miss and an epic resets only that counter', (
   const forcedPet = getPet(forced.petId);
   assert.equal(forcedPet?.rarity, 'epic');
   assert.equal(forcedPet?.line, 'green');
-  assert.equal(forced.isLineVariant, false);
+  assert.equal(forced.isGold, false);
   assert.deepEqual(forced.nextPity, { sinceEpicPlus: 0, sinceLegendary: 10 });
 });
 
 test('legendary pity fires on the 60th miss and resets both counters', () => {
-  const roll = rollPet('silver', { pity: { sinceEpicPlus: 9, sinceLegendary: 59 } }, seq([0, 0.99]));
+  const roll = rollPet('silver', { pity: { sinceEpicPlus: 9, sinceLegendary: 59 } }, seq([0.99]));
   const pet = getPet(roll.petId);
   assert.equal(pet?.rarity, 'legendary');
-  assert.equal(pet?.petId, 'silver_line_snowy_owl');
-  assert.equal(roll.isLineVariant, true);
+  assert.equal(pet?.petId, 'snowy_owl');
   assert.equal(roll.isGold, false);
   assert.deepEqual(roll.nextPity, { sinceEpicPlus: 0, sinceLegendary: 0 });
 });
@@ -155,7 +140,7 @@ test('legendary pity fires on the 60th miss and resets both counters', () => {
 test('a natural legendary resets both counters and a natural epic resets only epic+', () => {
   const legendary = rollPet('red', { pity: { sinceEpicPlus: 4, sinceLegendary: 7 } }, seq([0.99, 0.5, 0.5]));
   assert.equal(getPet(legendary.petId)?.rarity, 'legendary');
-  assert.equal(legendary.isLineVariant, false);
+  assert.equal(legendary.petId, 'lobster');
   assert.deepEqual(legendary.nextPity, { sinceEpicPlus: 0, sinceLegendary: 0 });
 
   const epic = rollPet('orange', { pity: { sinceEpicPlus: 3, sinceLegendary: 5 } }, seq([0.95, 0.99, 0.99]));

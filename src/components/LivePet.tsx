@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { haptics } from '@/lib/haptics';
+import { playSfx } from '@/lib/sfx';
 import { PET_ART } from '@/lib/petArt';
 import { PetSprite } from './PetSprite';
 
@@ -68,6 +69,7 @@ export function LivePet({ id, name, emoji, size, active = true }: Props) {
   const onPress = () => {
     if (reduceMotion || !active) return;
     haptics.light();
+    playSfx('hop');
     hop.value = withSequence(
       withTiming(1, { duration: 150, easing: Easing.out(Easing.quad) }),
       withSpring(0, { damping: 7, stiffness: 180 }),

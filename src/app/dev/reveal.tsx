@@ -1,16 +1,17 @@
-import { getPet, isLine, LINE_INFO, LINE_TABLE, LINES, variantPetId, type Creature, type Line, type Rarity } from '@game/catalog';
+import { getPet, isLine, LINE_INFO, LINE_TABLE, LINES, type Creature, type Line, type Rarity } from '@game/catalog';
 import { pullProgress } from '@game/leveling';
 import { rollPet, type PityState } from '@game/roll';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PullReveal, RARITY_COLOR } from '@/components/reveal/PullReveal';
+import { isSfxEnabled, setSfxEnabled } from '@/lib/sfx';
 
-// Dev-only playground for the pull reveal: pick any line and creature from the catalog, replay it,
+// Playground for the pull reveal: pick any line and creature from the catalog, replay it,
 // slow it down, or roll a random pull with the real odds and pity.
 // Open /dev/reveal (or the link at the bottom of Profile). Query params preset the controls, e.g.
-//   /dev/reveal?line=red&pet=lobster&variant=1&gold=1&pull=levelUp&speed=2&ui=0   (ui=0 hides the controls)
+//   /dev/reveal?line=red&pet=lobster&gold=1&pull=levelUp&speed=2&ui=0   (ui=0 hides the controls)
 // pull = new | dupe | levelUp | max: what this pull does to the pet's level (rules in _shared/game/leveling.ts).
 // Available in every build (dev, preview, and production), so the reveal can be shown on any phone.
 
@@ -36,7 +37,7 @@ const DEMO_STATIONS: Record<Line, string> = {
   silver: 'Airport',
 };
 
-type Params = { line?: string; pet?: string; variant?: string; gold?: string; pull?: string; speed?: string; ui?: string };
+type Params = { line?: string; pet?: string; gold?: string; pull?: string; speed?: string; ui?: string };
 
 function creaturesFor(line: Line): Creature[] {
   const table = LINE_TABLE[line];
@@ -65,22 +66,22 @@ export default function RevealPlayground() {
   const params = useLocalSearchParams<Params>();
   const [line, setLine] = useState<Line>(isLine(params.line ?? '') ? (params.line as Line) : 'red');
   const [creatureId, setCreatureId] = useState(params.pet ?? 'lobster');
-  const [isVariant, setVariant] = useState(params.variant === '1');
   const [isGold, setGold] = useState(params.gold === '1');
   const [pullKind, setPullKind] = useState<PullKind>(isPullKind(params.pull) ? params.pull : 'new');
   const [timeScale, setTimeScale] = useState(Number(params.speed) || 1);
+  const [soundOn, setSoundOn] = useState(isSfxEnabled());
   const [run, setRun] = useState(0);
   const pity = useRef<PityState>({ sinceEpicPlus: 0, sinceLegendary: 0 });
   const showControls = params.ui !== '0';
 
   const pool = creaturesFor(line);
   const creature = pool.find((c) => c.id === creatureId) ?? LINE_TABLE[line].legendary;
-  const canBeVariant = creature.rarity !== 'common';
-  const variant = isVariant && canBeVariant;
-  const pet = getPet(variant ? variantPetId(creature.id, line) : creature.id);
+  const pet = getPet(creature.id);
   const copies = copiesFor(creature.rarity, pullKind);
 
   const replay = () => setRun((n) => n + 1);
+  // Opened from Profile: go back there. Opened directly by link: there's nothing behind it, so go home.
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const pickLine = (next: Line) => {
     setLine(next);
     // Keep the same tier when switching lines (e.g. legendary -> that line's legendary).
@@ -90,20 +91,31 @@ export default function RevealPlayground() {
   const randomPull = () => {
     const roll = rollPet(line, { pity: pity.current }, Math.random);
     pity.current = roll.nextPity;
-    setCreatureId(getPet(roll.petId)?.baseId ?? roll.petId);
-    setVariant(roll.isLineVariant);
+    setCreatureId(roll.petId);
     setGold(roll.isGold);
     replay();
   };
 
   // Changing any option remounts the reveal, which replays it from the start.
-  const revealKey = [line, creature.id, variant, isGold, copies, timeScale, run].join('|');
+  const revealKey = [line, creature.id, isGold, copies, timeScale, run].join('|');
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       {showControls && (
         <View style={styles.controls}>
+          <View style={styles.header}>
+            <Pressable
+              onPress={goBack}
+              style={({ pressed }) => [styles.back, pressed && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={8}
+            >
+              <Text style={styles.backText}>‹ Back</Text>
+            </Pressable>
+            <Text style={styles.title}>Reveal playground</Text>
+          </View>
           <ChipRow>
             {LINES.map((l) => (
               <Chip key={l} label={LINE_INFO[l].name} color={LINE_INFO[l].color} active={l === line} onPress={() => pickLine(l)} />
@@ -128,12 +140,15 @@ export default function RevealPlayground() {
           <ChipRow>
             <Chip label="🎲 Random pull" active onPress={randomPull} />
             <Chip label="↻ Replay" active onPress={replay} />
-            <Chip
-              label={canBeVariant ? 'Line variant' : 'Line variant (not for commons)'}
-              active={variant}
-              onPress={() => canBeVariant && setVariant((v) => !v)}
-            />
             <Chip label="Gold" active={isGold} onPress={() => setGold((v) => !v)} />
+            <Chip
+              label={soundOn ? '🔊 Sound on' : '🔇 Sound off'}
+              active={soundOn}
+              onPress={() => {
+                setSfxEnabled(!soundOn);
+                setSoundOn(!soundOn);
+              }}
+            />
             {SPEEDS.map((s) => (
               <Chip key={s.label} label={s.label} active={s.timeScale === timeScale} onPress={() => setTimeScale(s.timeScale)} />
             ))}
@@ -148,7 +163,6 @@ export default function RevealPlayground() {
             name: pet?.name ?? creature.name,
             emoji: creature.emoji,
             rarity: creature.rarity,
-            isVariant: variant,
             isGold,
           }}
           line={line}
@@ -205,4 +219,8 @@ const styles = StyleSheet.create({
   chipTextActive: { color: '#121826' },
   swatch: { width: 10, height: 10, borderRadius: 5 },
   stage: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingBottom: 2 },
+  back: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#232C42' },
+  backText: { color: '#F3F5FA', fontSize: 14, fontWeight: '700' },
+  title: { color: '#C9D1E3', fontSize: 14, fontWeight: '700' },
 });

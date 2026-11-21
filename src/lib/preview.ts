@@ -60,7 +60,7 @@ const STATIONS: { name: string; line: Line }[] = [
 
 const SEED: { pet_id: string; copies: number; is_gold: boolean; station: string; line: Line; hours: number }[] = [
   { pet_id: 'mallard_duck', copies: 2, is_gold: false, station: 'Park Street', line: 'red', hours: 80 },
-  { pet_id: 'red_line_alewife', copies: 1, is_gold: false, station: 'Harvard', line: 'red', hours: 76 },
+  { pet_id: 'alewife', copies: 1, is_gold: false, station: 'Harvard', line: 'red', hours: 76 },
   { pet_id: 'monarch_butterfly', copies: 1, is_gold: false, station: 'Ruggles', line: 'orange', hours: 60 },
   { pet_id: 'swan', copies: 3, is_gold: false, station: 'Kenmore', line: 'green', hours: 55 },
   { pet_id: 'bullfrog', copies: 1, is_gold: false, station: 'BU Central', line: 'green', hours: 50 },
@@ -144,7 +144,7 @@ export const previewData = {
       status: 'ok',
       stationName: station.name,
       stationLine: station.line,
-      pet: { petId: roll.petId, isGold: roll.isGold, isLineVariant: roll.isLineVariant },
+      pet: { petId: roll.petId, isGold: roll.isGold },
       copies: existing?.copies ?? 1,
       isNew,
       becameGold: roll.isGold && !wasGold,
@@ -180,7 +180,7 @@ function linesOf(list: PublicPet[]): number {
 
 const users: SampleUser[] = [
   { id: 'u-priya', handle: 'priya_on_the_t', display_name: 'Priya S.', created_at: daysAgo(22), last_active_at: hoursAgo(3), total_scans: 23,
-    pets: samplePets([['mallard_duck', 5], ['pigeon', 4], ['haymarket_rat', 2], ['northeastern_husky', 1], ['swan', 3], ['herring_gull', 1], ['orange_line_monarch_butterfly', 1]]) },
+    pets: samplePets([['mallard_duck', 5], ['pigeon', 4], ['haymarket_rat', 2], ['northeastern_husky', 1], ['swan', 3], ['herring_gull', 1], ['monarch_butterfly', 1]]) },
   { id: 'u-graham', handle: 'graham_rides', display_name: 'Graham R.', created_at: daysAgo(30), last_active_at: hoursAgo(0.02), total_scans: 61,
     pets: samplePets([['canada_goose', 6], ['bullfrog', 3], ['bu_terrier', 2], ['snapping_turtle', 1, true], ['alewife', 2], ['blue_jay', 1]]) },
   { id: 'u-gracie', handle: 'gracie_t', display_name: 'Gracie T.', created_at: daysAgo(5), last_active_at: hoursAgo(26), total_scans: 6,
@@ -188,7 +188,7 @@ const users: SampleUser[] = [
   { id: 'u-granite', handle: 'granite_state', display_name: 'Sam K.', created_at: daysAgo(40), last_active_at: daysAgo(9), total_scans: 12,
     pets: samplePets([['gray_squirrel', 3], ['striped_bass', 2], ['harbor_seal', 1]]) },
   { id: 'u-marcus', handle: 'mbta_marcus', display_name: 'Marcus D.', created_at: daysAgo(45), last_active_at: hoursAgo(8), total_scans: 88,
-    pets: samplePets([['mallard_duck', 5], ['pigeon', 5], ['mit_beaver', 3], ['lobster', 1], ['red_line_alewife', 1], ['red_fox', 1], ['penguin', 2], ['snowy_owl', 1]]) },
+    pets: samplePets([['mallard_duck', 5], ['pigeon', 5], ['mit_beaver', 3], ['lobster', 1], ['alewife', 1], ['red_fox', 1], ['penguin', 2], ['snowy_owl', 1]]) },
   { id: 'u-ava', handle: 'ava_outbound', display_name: 'Ava W.', created_at: daysAgo(18), last_active_at: daysAgo(2), total_scans: 9,
     pets: samplePets([['canada_goose', 3], ['horseshoe_crab', 1], ['humpback_whale', 1]]) },
   { id: 'u-noor', handle: 'noor_silverline', display_name: 'Noor A.', created_at: daysAgo(11), last_active_at: hoursAgo(1), total_scans: 17,

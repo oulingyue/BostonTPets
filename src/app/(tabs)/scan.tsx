@@ -64,11 +64,10 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.fill}>
         <PullReveal
           pet={{
-            id: info?.baseId ?? r.pet.petId, // art is keyed by the base creature
+            id: r.pet.petId,
             name: info?.name ?? r.pet.petId,
             emoji: info?.emoji ?? '?',
             rarity: info?.rarity ?? 'common',
-            isVariant: r.pet.isLineVariant,
             isGold: r.pet.isGold,
           }}
           // A scan function deployed before stationLine existed won't send it: fall back to the pet's own line.

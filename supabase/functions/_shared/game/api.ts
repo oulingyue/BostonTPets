@@ -9,7 +9,7 @@ export type ScanResponse =
       stationName: string;
       /** The scanned code's line. The pull reveal sends a train (or bus) in this line's color. */
       stationLine: Line;
-      pet: { petId: string; isGold: boolean; isLineVariant: boolean };
+      pet: { petId: string; isGold: boolean };
       copies: number;
       isNew: boolean;
       becameGold: boolean;

@@ -1,4 +1,4 @@
-import { CATALOG, LINE_INFO, LINE_TABLE, LINES, TOTAL_PETS, variantPetId, type Line } from '@game/catalog';
+import { CATALOG, LINE_INFO, LINE_TABLE, LINES, TOTAL_PETS, type Line } from '@game/catalog';
 import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -33,13 +33,12 @@ const FILTERS: { id: Filter; label: string; color?: string }[] = [
 /** Shared commons are the same on every line's table. */
 const COMMON_IDS = LINE_TABLE.red.commons.map((c) => c.id);
 
-/** Each line's exclusives, legendary first, as base pet ids. */
+/** Each line's exclusives, legendary first. */
 function lineCreatureIds(line: Line): string[] {
   const table = LINE_TABLE[line];
   return [table.legendary, ...table.epics, ...table.rares].map((c) => c.id);
 }
 
-const LINE_PET_IDS = LINES.flatMap(lineCreatureIds);
 const LEGENDARY_IDS = LINES.map((line) => LINE_TABLE[line].legendary.id);
 
 export default function CollectionScreen() {
@@ -55,14 +54,8 @@ export default function CollectionScreen() {
   const has = (id: string) => ownedById.has(id);
 
   const ownedCount = ownedById.size;
-  const variantsOwned = LINES.reduce(
-    (n, line) => n + lineCreatureIds(line).filter((id) => has(variantPetId(id, line))).length,
-    0,
-  );
   const legendariesOwned = LEGENDARY_IDS.filter(has).length;
-  const linesFound = LINES.filter((line) =>
-    lineCreatureIds(line).some((id) => has(id) || has(variantPetId(id, line))),
-  ).length;
+  const linesFound = LINES.filter((line) => lineCreatureIds(line).some(has)).length;
   const golds = [...ownedById.values()].filter((p) => p.is_gold).length;
 
   const badgeWidth = (Math.min(width, MAX_WIDTH) - PADDING * 2 - COL_GAP * (COLUMNS - 1)) / COLUMNS;
@@ -83,11 +76,10 @@ export default function CollectionScreen() {
       >
         <View style={styles.stats}>
           <Stat value={`${ownedCount}/${TOTAL_PETS}`} label="Collected" />
-          <Stat value={`${variantsOwned}/${LINE_PET_IDS.length}`} label="Variants" />
+          <Stat value={`${golds}`} label="Gold ✨" />
           <Stat value={`${legendariesOwned}/${LEGENDARY_IDS.length}`} label="Legendary" />
           <Stat value={`${linesFound}/${LINES.length}`} label="Lines" />
         </View>
-        {golds > 0 && <Text style={styles.gold}>✨ {golds} gold</Text>}
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -124,19 +116,16 @@ export default function CollectionScreen() {
 
         {linesToShow.map((line) => {
           const ids = lineCreatureIds(line);
-          const variantIds = ids.map((id) => variantPetId(id, line));
-          const found = ids.filter(has).length + variantIds.filter(has).length;
+          const found = ids.filter(has).length;
           return (
             <Section
               key={line}
               title={LINE_INFO[line].name}
               color={LINE_INFO[line].color}
               found={found}
-              total={ids.length * 2}
+              total={ids.length}
             >
               <View style={styles.grid}>{ids.map(badge)}</View>
-              <Text style={styles.subhead}>Line variants</Text>
-              <View style={styles.grid}>{variantIds.map(badge)}</View>
             </Section>
           );
         })}
@@ -200,7 +189,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 2,
   },
-  gold: { textAlign: 'center', color: colors.muted, fontSize: 13, marginTop: 10 },
 
   error: { color: colors.danger, textAlign: 'center', marginTop: 12 },
   empty: { textAlign: 'center', color: colors.muted, marginTop: 14 },
@@ -234,6 +222,5 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   sectionCount: { fontSize: 13, fontWeight: '600', color: colors.muted },
   note: { fontSize: 13, color: colors.muted, marginTop: -6, marginBottom: 12 },
-  subhead: { fontSize: 13, fontWeight: '600', color: colors.muted, marginTop: 16, marginBottom: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: COL_GAP, rowGap: 16 },
 });

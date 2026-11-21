@@ -2,7 +2,7 @@
 // Shared by the app (via the `@game/*` path alias) and the `scan` Edge Function (Deno).
 // Keep this file dependency-free so it runs unchanged in both runtimes.
 //
-// 65 collectible ids: 5 shared commons + 30 line-exclusives + 30 line variants.
+// 35 collectible ids: 5 shared commons + 30 line-exclusives.
 // Artwork is a placeholder emoji; swap sprites later keyed by `petId`.
 
 export const LINES = ['red', 'orange', 'green', 'blue', 'silver'] as const;
@@ -34,8 +34,6 @@ export const TIER_WEIGHT: Record<Rarity, number> = {
 
 export const ODDS = {
   goldChance: 0.01,
-  /** Applied only to line-specific Rare / Epic / Legendary. Commons never roll a variant. */
-  lineVariantChance: 0.05,
   /** Hard pity: the Nth roll without an Epic or better is forced to Epic+. */
   pityEpicPlus: 10,
   /** Hard pity: the Nth roll without a Legendary is forced to Legendary. */
@@ -65,13 +63,11 @@ export type Creature = {
 
 export type Pet = {
   petId: string;
-  baseId: string;
   name: string;
   emoji: string;
   rarity: Rarity;
-  /** Null for a shared common. Set for a line-exclusive and for its line variant. */
+  /** Null for a shared common. Set for a line-exclusive. */
   line: Line | null;
-  isLineVariant: boolean;
   blurb: string;
 };
 
@@ -374,33 +370,13 @@ export const LINE_TABLE: Record<Line, LineTable> = {
   silver: { commons: COMMONS, ...LINE_CREATURES.silver },
 };
 
-/** Line-colored variant of a line-exclusive creature. Commons never use this. */
-export function variantPetId(baseId: string, line: Line): string {
-  return `${line}_line_${baseId}`;
-}
-
 function basePet(creature: Creature, line: Line | null): Pet {
   return {
     petId: creature.id,
-    baseId: creature.id,
     name: creature.name,
     emoji: creature.emoji,
     rarity: creature.rarity,
     line,
-    isLineVariant: false,
-    blurb: creature.blurb,
-  };
-}
-
-function variantPet(creature: Creature, line: Line): Pet {
-  return {
-    petId: variantPetId(creature.id, line),
-    baseId: creature.id,
-    name: `${LINE_INFO[line].name} ${creature.name}`,
-    emoji: creature.emoji,
-    rarity: creature.rarity,
-    line,
-    isLineVariant: true,
     blurb: creature.blurb,
   };
 }
@@ -412,8 +388,6 @@ function buildCatalog(): Record<string, Pet> {
     const table = LINE_TABLE[line];
     for (const creature of [...table.rares, ...table.epics, table.legendary]) {
       catalog[creature.id] = basePet(creature, line);
-      const variant = variantPet(creature, line);
-      catalog[variant.petId] = variant;
     }
   }
   return catalog;

@@ -1,9 +1,11 @@
 import { getPet, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
+import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
 import type { PublicPet } from '@/lib/api';
+import { playSfx } from '@/lib/sfx';
 import { formatDate } from '@/lib/time';
 import { colors, rarityStyle, spacing } from '@/theme';
 
@@ -13,6 +15,12 @@ import { colors, rarityStyle, spacing } from '@/theme';
  */
 export function PetSheet({ pet, onClose }: { pet: PublicPet | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+
+  // A chirp each time the sheet opens on a pet.
+  const openPetId = pet?.pet_id ?? null;
+  useEffect(() => {
+    if (openPetId) playSfx('open');
+  }, [openPetId]);
 
   return (
     <Modal visible={pet !== null} transparent animationType="slide" onRequestClose={onClose}>
