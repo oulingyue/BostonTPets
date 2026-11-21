@@ -8,11 +8,13 @@ import { withSupabase } from 'npm:@supabase/server@1';
 
 const HANDLE_PATTERN = /^[a-z0-9_]{3,20}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MIN_QUERY = 3;
+const MAX_QUERY = 50;
 /** Upper bound on a Following / Followers list. */
 const MAX_FOLLOW_LIST = 500;
 
 type SocialRequest =
-  | { action: 'search'; prefix?: unknown }
+  | { action: 'search'; query?: unknown }
   | { action: 'profile'; handle?: unknown }
   | { action: 'follows'; handle?: unknown; kind?: unknown }
   | { action: 'counts' }
@@ -69,10 +71,11 @@ export default {
     try {
       switch (body.action) {
         case 'search': {
-          // Short or invalid prefixes return nothing rather than an error, since the app searches as you type.
-          const prefix = typeof body.prefix === 'string' ? body.prefix.trim().replace(/^@/, '').toLowerCase() : '';
-          if (prefix.length < 3 || !/^[a-z0-9_]+$/.test(prefix)) return Response.json([]);
-          const { data, error } = await admin.rpc('search_users', { p_viewer: me, p_prefix: prefix });
+          // Display-name search, case-insensitive (matching is in the search_users SQL function).
+          // Short queries return nothing rather than an error, since the app searches as you type.
+          const query = typeof body.query === 'string' ? body.query.trim().replace(/\s+/g, ' ') : '';
+          if (query.length < MIN_QUERY || query.length > MAX_QUERY) return Response.json([]);
+          const { data, error } = await admin.rpc('search_users', { p_viewer: me, p_prefix: query });
           if (error) throw error;
           return Response.json(await summaries(data as string[]));
         }

@@ -76,7 +76,7 @@ export async function submitScan(payload: string): Promise<ScanResponse> {
 // since RLS only lets you read your own rows. Request body: { action, ...params }.
 //
 //   action             params                              returns
-//   search             { prefix }                          UserSummary[]   (handle prefix, 3+ chars, max 20, excludes caller)
+//   search             { query }                           UserSummary[]   (display name contains query, any case, 3+ chars, max 20, excludes caller)
 //   profile            { handle }                          PublicProfile | null
 //   follows            { handle, kind }                    UserSummary[]
 //   counts             {}                                  FollowCounts    (the caller's own)
@@ -119,9 +119,9 @@ async function invokeSocial<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
-export async function searchUsers(prefix: string): Promise<UserSummary[]> {
-  if (IS_PREVIEW) return previewSocial.search(prefix);
-  return invokeSocial({ action: 'search', prefix });
+export async function searchUsers(query: string): Promise<UserSummary[]> {
+  if (IS_PREVIEW) return previewSocial.search(query);
+  return invokeSocial({ action: 'search', query });
 }
 
 export async function fetchPublicProfile(handle: string): Promise<PublicProfile | null> {

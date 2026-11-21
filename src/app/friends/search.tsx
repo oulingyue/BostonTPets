@@ -2,18 +2,19 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { UserRow } from '@/components/UserRow';
 import { searchUsers, type UserSummary } from '@/lib/api';
-import { HANDLE_MIN, normalizeHandle } from '@/lib/handle';
 import { colors, spacing } from '@/theme';
 
 const DEBOUNCE_MS = 250;
+/** Same minimum as the social function. */
+const MIN_QUERY = 3;
 
 type Results = { query: string; users: UserSummary[] } | { query: string; error: string };
 
 export default function FindPeople() {
   const [input, setInput] = useState('');
   const [results, setResults] = useState<Results | null>(null);
-  const query = normalizeHandle(input);
-  const tooShort = query.length < HANDLE_MIN;
+  const query = input.trim().replace(/\s+/g, ' ');
+  const tooShort = query.length < MIN_QUERY;
 
   useEffect(() => {
     if (tooShort) return; // old results are ignored while the query is too short
@@ -44,30 +45,29 @@ export default function FindPeople() {
       ListHeaderComponent={
         <View style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
           <Text style={styles.label} nativeID="search-label">
-            Search by username
+            Search by name
           </Text>
           <View style={styles.inputWrap}>
-            <Text style={styles.at}>@</Text>
             <TextInput
               style={styles.input}
               value={input}
               onChangeText={setInput}
-              placeholder="username"
+              placeholder="Name"
               placeholderTextColor="#8A8780"
               autoFocus
-              autoCapitalize="none"
+              autoCapitalize="words"
               autoCorrect={false}
               spellCheck={false}
               returnKeyType="search"
               accessibilityLabelledBy="search-label"
-              accessibilityLabel="Search by username"
+              accessibilityLabel="Search by name"
               clearButtonMode="while-editing"
             />
           </View>
           <Text style={styles.hint}>
             {tooShort
-              ? `Type at least ${HANDLE_MIN} characters.`
-              : `Usernames that start with “${query}”.`}
+              ? `Type at least ${MIN_QUERY} characters.`
+              : `Names that contain “${query}”.`}
           </Text>
         </View>
       }
@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
   },
-  at: { fontSize: 17, fontWeight: '700', color: colors.muted },
   input: { flex: 1, fontSize: 17, paddingVertical: 12, color: colors.text },
   hint: { fontSize: 12, color: colors.muted },
   empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },

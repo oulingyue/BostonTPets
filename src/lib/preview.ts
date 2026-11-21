@@ -225,11 +225,13 @@ function summaryOf(id: string): UserSummary | null {
 const delay = () => new Promise((r) => setTimeout(r, 150));
 
 export const previewSocial = {
-  async search(prefix: string): Promise<UserSummary[]> {
+  async search(query: string): Promise<UserSummary[]> {
     await delay();
-    const q = prefix.toLowerCase();
+    const q = query.trim().toLowerCase();
+    const name = (u: SampleUser) => u.display_name.toLowerCase();
     return users
-      .filter((u) => u.handle.startsWith(q))
+      .filter((u) => name(u).includes(q))
+      .sort((a, b) => Number(name(b).startsWith(q)) - Number(name(a).startsWith(q)) || name(a).localeCompare(name(b)))
       .slice(0, 20)
       .map((u) => summaryOf(u.id)!);
   },
