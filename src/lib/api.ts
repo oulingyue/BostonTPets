@@ -82,7 +82,7 @@ export async function submitScan(payload: string): Promise<ScanResponse> {
 //   counts             {}                                  FollowCounts    (the caller's own)
 //   follow / unfollow  { userId }                          { ok: true }
 //
-// Two small Postgres RPCs are called directly (supabase/migrations/20251121230000_profile_social.sql):
+// Two small Postgres RPCs are called directly (supabase/migrations/20251122130000_profile_social.sql):
 //   handle_available(p_handle) -> boolean   callable signed out, for the sign-up form
 //   touch_last_active()        -> void      sets the caller's last_active_at = now()
 //

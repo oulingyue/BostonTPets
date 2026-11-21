@@ -1,5 +1,4 @@
 // Request/response contract for the `scan` Edge Function. Types only.
-import type { Line, Species } from './catalog.ts';
 
 export type ScanRequest = { payload: string };
 
@@ -7,7 +6,7 @@ export type ScanResponse =
   | {
       status: 'ok';
       stationName: string;
-      pet: { petId: string; species: Species; line: Line; isGold: boolean };
+      pet: { petId: string; isGold: boolean; isLineVariant: boolean };
       copies: number;
       isNew: boolean;
       becameGold: boolean;

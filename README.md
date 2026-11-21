@@ -1,7 +1,7 @@
 # BostonTPets
 
 BostonHacks project: gacha pets you collect by scanning QR codes at T stations.
-The repo still runs the **skeleton** (4 species × 5 lines = 20 pets). The **full roster** (65 slots, per-line tables, pity) is specified in [DESIGN.md](DESIGN.md).
+The roll is the **full roster** (65 pets, per-line tables, pity). Collection layout and art are still placeholders. Spec: [DESIGN.md](DESIGN.md).
 
 See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon implementation order.
 
@@ -14,17 +14,17 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] Expo app scaffold (SDK 58, Expo Router, TypeScript)
 - [x] Email + password sign-up / sign-in, with protected routes
 - [x] Tabs: Collection, Scan (center button), Profile
-- [x] Collection: "X / 20" summary, 4 species cards with line dots, and a species detail screen (stars, gold, first caught)
+- [x] Collection: "X / 65" summary and a temporary rarity-grouped list (layout still belongs to the collection teammate)
 - [x] Scan: QR camera, a client-side `btp:` code check, and cooldown / invalid-code / no-signal messages
 - [x] Fare-gate reveal animation (placeholder visuals)
 - [x] Profile: @username, stat tiles, Pets | History, pet sheet, sign out
 - [x] Following: username search, follow / unfollow, other people's profiles and pets (`social` Edge Function + `follows` table)
 - [x] Placeholder pet art: emoji on a circle in the line color
 - [x] `scan` Edge Function: validates the code, rolls server-side, records via the `record_scan` RPC
-- [x] Shared game catalog + roll logic, with tests for the odds
+- [x] Full-roster catalog, per-line roll, line variants, and hard pity (`roll_pity`), with tests in `npm run test:game`
 
 ### Next
-- [ ] Push Supabase migrations (`profiles` + game + `pet_id` + profile handle/RPCs + follows), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone
+- [ ] Push Supabase migrations (including `roll_pity` and `follows`), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone. Wipe `user_pets` / `scans` if they still hold skeleton ids like `red_lobster`.
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
 - [ ] **MVP — Leaderboards:** collectors / gold / scans ([DESIGN.md](DESIGN.md#leaderboards-mvp))
@@ -33,7 +33,7 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 
 ## Loot table
 
-Documented in [DESIGN.md — Target design (full roster)](DESIGN.md#target-design-full-roster). Implementation checklist and priorities: [Hackathon plan](DESIGN.md#hackathon-plan-12-hours).
+Implemented in `supabase/functions/_shared/game/catalog.ts` and `roll.ts`. Odds, pity reset, and the `getPet` / `CATALOG` / `TOTAL_PETS` contract: [DESIGN.md — Target design](DESIGN.md#target-design-full-roster).
 
 ## Duplicates and levels
 Level = copies, capped at ★5. Extra copies are counted (e.g. ★★★★★ +3). Levels are cosmetic only.

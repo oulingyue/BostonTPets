@@ -1,4 +1,4 @@
-import { levelFromCopies, LINE_INFO, MAX_LEVEL, parsePetId, petName, SPECIES_INFO } from '@game/catalog';
+import { getPet, levelFromCopies, LINE_INFO, MAX_LEVEL, type Rarity } from '@game/catalog';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
@@ -7,11 +7,12 @@ import type { PublicPet } from '@/lib/api';
 import { formatDate } from '@/lib/time';
 import { colors, spacing } from '@/theme';
 
-const RARITY_STYLE = {
+const RARITY_STYLE: Record<Rarity, { bg: string; fg: string }> = {
   common: { bg: '#ECEAE4', fg: '#4F4F4F' },
   rare: { bg: '#E6EEFA', fg: '#003DA5' },
+  epic: { bg: '#F0E8FA', fg: '#6B2FA3' },
   legendary: { bg: '#FBEFD6', fg: '#8A5A00' },
-} as const;
+};
 
 /**
  * Bottom sheet with one pet's details. The same sheet is used for your pets and other people's,
@@ -31,10 +32,9 @@ export function PetSheet({ pet, onClose }: { pet: PublicPet | null; onClose: () 
 }
 
 function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () => void; bottomInset: number }) {
-  const slot = parsePetId(pet.pet_id);
-  if (!slot) return null;
-  const { species, line } = slot;
-  const info = SPECIES_INFO[species];
+  const info = getPet(pet.pet_id);
+  if (!info) return null;
+  const { line } = info;
   const level = levelFromCopies(pet.copies);
   const extra = Math.max(0, pet.copies - MAX_LEVEL);
   const rarity = RARITY_STYLE[info.rarity];
@@ -44,17 +44,19 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
       <View style={styles.grabber} />
 
       <View style={styles.hero}>
-        <PetBadge species={species} line={line} owned isGold={pet.is_gold} size={112} />
+        <PetBadge petId={pet.pet_id} owned isGold={pet.is_gold} size={112} />
         <Text style={styles.title} accessibilityRole="header">
           {pet.is_gold ? 'Gold ' : ''}
-          {petName(line, species)}
+          {info.name}
         </Text>
         <View style={styles.chips}>
           <Text style={[styles.chip, { backgroundColor: rarity.bg, color: rarity.fg }]}>{info.rarity}</Text>
-          <Text style={[styles.chip, { backgroundColor: '#F1EFEA', color: colors.text }]}>
-            <Text style={{ color: LINE_INFO[line].color }}>● </Text>
-            {LINE_INFO[line].name}
-          </Text>
+          {line && (
+            <Text style={[styles.chip, { backgroundColor: '#F1EFEA', color: colors.text }]}>
+              <Text style={{ color: LINE_INFO[line].color }}>● </Text>
+              {LINE_INFO[line].name}
+            </Text>
+          )}
         </View>
       </View>
 

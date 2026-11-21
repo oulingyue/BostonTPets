@@ -1,4 +1,4 @@
-import { parsePetId, petName } from '@game/catalog';
+import { getPet } from '@game/catalog';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -98,24 +98,20 @@ export default function ProfileScreen() {
           <View style={{ gap: spacing.sm }}>
             <Text style={styles.privateNote}>Only you can see your scan history.</Text>
             {(data?.history ?? []).length === 0 && <Text style={styles.empty}>No scans yet.</Text>}
-            {(data?.history ?? []).map((item) => {
-              const slot = parsePetId(item.pet_id);
-              if (!slot) return null;
-              return (
-                <View key={item.id} style={styles.historyRow}>
-                  <PetBadge species={slot.species} line={slot.line} owned isGold={item.is_gold} size={40} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.historyPet}>
-                      {item.is_gold ? 'Gold ' : ''}
-                      {petName(slot.line, slot.species)}
-                    </Text>
-                    <Text style={styles.historyMeta}>
-                      {item.station_name} · {new Date(item.created_at).toLocaleString()}
-                    </Text>
-                  </View>
+            {(data?.history ?? []).map((item) => (
+              <View key={item.id} style={styles.historyRow}>
+                <PetBadge petId={item.pet_id} owned isGold={item.is_gold} size={40} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.historyPet}>
+                    {item.is_gold ? 'Gold ' : ''}
+                    {getPet(item.pet_id)?.name ?? item.pet_id}
+                  </Text>
+                  <Text style={styles.historyMeta}>
+                    {item.station_name} · {new Date(item.created_at).toLocaleString()}
+                  </Text>
                 </View>
-              );
-            })}
+              </View>
+            ))}
           </View>
         )}
 

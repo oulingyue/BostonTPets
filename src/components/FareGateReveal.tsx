@@ -1,4 +1,5 @@
-import { GOLD_COLOR, petName, SPECIES_INFO, type Line, type Rarity, type Species } from '@game/catalog';
+import type { ScanResponse } from '@game/api';
+import { getPet, GOLD_COLOR, type Rarity } from '@game/catalog';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, spacing } from '@/theme';
@@ -8,11 +9,12 @@ import { Stars } from './Stars';
 const RARITY_LIGHT: Record<Rarity, string> = {
   common: '#3DBE5A',
   rare: '#2F80ED',
+  epic: '#C44DFF',
   legendary: '#9B51E0',
 };
 
 type Props = {
-  pet: { species: Species; line: Line; isGold: boolean };
+  pet: Extract<ScanResponse, { status: 'ok' }>['pet'];
   stationName: string;
   copies: number;
   isNew: boolean;
@@ -29,6 +31,7 @@ export function FareGateReveal({ pet, stationName, copies, isNew, becameGold, on
   const light = useRef(new Animated.Value(0)).current;
   const gates = useRef(new Animated.Value(0)).current;
   const petIn = useRef(new Animated.Value(0)).current;
+  const info = getPet(pet.petId);
 
   useEffect(() => {
     Animated.sequence([
@@ -40,7 +43,7 @@ export function FareGateReveal({ pet, stationName, copies, isNew, becameGold, on
     ]).start();
   }, [tap, light, gates, petIn]);
 
-  const lightColor = pet.isGold ? GOLD_COLOR : RARITY_LIGHT[SPECIES_INFO[pet.species].rarity];
+  const lightColor = pet.isGold ? GOLD_COLOR : RARITY_LIGHT[info?.rarity ?? 'common'];
 
   return (
     <View style={styles.container}>
@@ -54,10 +57,8 @@ export function FareGateReveal({ pet, stationName, copies, isNew, becameGold, on
       />
 
       <View style={styles.gateFrame}>
-        <Animated.View
-          style={[styles.petSlot, { opacity: petIn, transform: [{ scale: petIn }] }]}
-        >
-          <PetBadge species={pet.species} line={pet.line} owned isGold={pet.isGold} size={140} />
+        <Animated.View style={[styles.petSlot, { opacity: petIn, transform: [{ scale: petIn }] }]}>
+          <PetBadge petId={pet.petId} owned isGold={pet.isGold} size={140} />
         </Animated.View>
         <Animated.View
           style={[
@@ -89,11 +90,12 @@ export function FareGateReveal({ pet, stationName, copies, isNew, becameGold, on
       <Animated.View style={[styles.info, { opacity: petIn }]}>
         {isNew && <Text style={styles.newTag}>NEW!</Text>}
         {becameGold && <Text style={[styles.newTag, { backgroundColor: GOLD_COLOR }]}>TURNED GOLD!</Text>}
+        {pet.isLineVariant && <Text style={[styles.newTag, { backgroundColor: '#C44DFF' }]}>LINE VARIANT!</Text>}
         <Text style={styles.name}>
           {pet.isGold ? 'Gold ' : ''}
-          {petName(pet.line, pet.species)}
+          {info?.name ?? pet.petId}
         </Text>
-        <Text style={styles.rarity}>{SPECIES_INFO[pet.species].rarity}</Text>
+        <Text style={styles.rarity}>{info?.rarity ?? ''}</Text>
         <Stars copies={copies} size={22} />
         <Pressable style={styles.button} onPress={onDone}>
           <Text style={styles.buttonText}>Nice!</Text>
