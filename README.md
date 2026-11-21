@@ -71,6 +71,9 @@ Each T line gets its own creatures, and scanning a code on a line rolls from tha
 - `roll.ts` would roll from the scanned line's table, replacing the 70% line roll.
 - Pity needs a per-user roll counter in the database. It's listed as out of scope in DESIGN.md.
 
+## Duplicates and levels
+Level = copies, capped at ★5. Extra copies are counted (e.g. ★★★★★ +3). Levels are cosmetic only.
+
 ## Stack
 
 - **App:** Expo SDK 58 + Expo Router + TypeScript (`src/`)
