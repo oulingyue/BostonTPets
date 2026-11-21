@@ -176,7 +176,9 @@ function tierNote(f, dur = 0.18) {
 function writeWav(file, samples) {
   let peak = 0;
   for (const s of samples) peak = Math.max(peak, Math.abs(s));
-  const gain = peak > 0.9 ? 0.9 / peak : 1; // never clip
+  // Normalize every sound to the same peak, so each one is clearly audible on a phone speaker (and never clips).
+  const TARGET_PEAK = 0.8;
+  const gain = peak > 0 ? TARGET_PEAK / peak : 1;
   const data = Buffer.alloc(samples.length * 2);
   samples.forEach((s, i) => data.writeInt16LE(Math.round(Math.max(-1, Math.min(1, s * gain)) * 32767), i * 2));
   const header = Buffer.alloc(44);

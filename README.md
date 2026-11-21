@@ -85,7 +85,7 @@ Open `/dev/reveal`, or tap **Reveal playground** at the bottom of the Profile ta
 
 ### Sound effects
 
-The reveal, level-ups, tapping your pet, and opening pets in the collection all play 8-bit sound effects (`src/lib/sfx.ts`). They mix with the player's music and stay quiet when the phone is on silent. The sounds are synthesized by `scripts/sfx/generate.mjs`, so they're original and license-free: edit a recipe there and run `npm run sfx` to regenerate `assets/sfx/`.
+The reveal, level-ups, tapping your pet, and opening pets in the collection all play 8-bit sound effects (`src/lib/sfx.ts`). They mix with the player's music and play even when the phone is on silent or vibrate (they use the media volume). The sounds are synthesized by `scripts/sfx/generate.mjs`, so they're original and license-free: edit a recipe there and run `npm run sfx` to regenerate `assets/sfx/`.
 
 ### Windows
 
