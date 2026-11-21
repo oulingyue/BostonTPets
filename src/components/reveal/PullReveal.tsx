@@ -27,6 +27,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { haptics } from '@/lib/haptics';
+import { playSfx, preloadSfx, TIER_SFX } from '@/lib/sfx';
 import { ExpBar } from '../ExpBar';
 import { LivePet } from '../LivePet';
 import { Stars } from '../Stars';
@@ -321,9 +322,11 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     const variantText = showVariant ? `, ${lineInfo.name} variant` : '';
     const announce = () =>
       AccessibilityInfo.announceForAccessibility(`${displayName}, ${RARITY_LABEL[pet.rarity]}${variantText}`);
+    preloadSfx();
     if (reduceMotion) {
       showFinalState();
       haptics.success();
+      playSfx('pop');
       announce();
       return;
     }
@@ -343,6 +346,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     t += 150 + T.cardIn;
     at(t, () => {
       haptics.tick();
+      playSfx('tap');
       ripple.value = timing(1, { duration: 500, easing: Easing.out(Easing.quad) });
       readerOut.value = delay(250, timing(1, { duration: 280, easing: Easing.in(Easing.cubic) }));
     });
@@ -356,6 +360,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         fill.value = timing(1, { duration: 260, easing: Easing.out(Easing.quad) });
         glow.value = withSequence(timing(0.38, { duration: 80 }), timing(0.12, { duration: 380 }));
         TIER_HAPTICS[i]();
+        playSfx(TIER_SFX[i]);
       });
       if (i < steps.length - 1) t += T.step;
     });
@@ -367,11 +372,13 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     at(t, () => {
       flashOnce();
       haptics.heavy();
+      playSfx('flash');
     });
     if (isLegendary) {
       at(t + 380, () => {
         flashOnce();
         haptics.success();
+        playSfx('legendary');
         shake.value = withSequence(
           ...Array.from({ length: 12 }, (_, k) => timing(k % 2 ? -1 : 1, { duration: 45 })),
           timing(0, { duration: 45 }),
@@ -384,6 +391,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     // 3. The train (or bus) pulls in from the right, rumbling and slowing to a stop.
     at(t, () => {
       arrive.value = timing(1, { duration: T.arrive, easing: Easing.out(Easing.cubic) });
+      playSfx('arrive');
     });
     [0, 180, 350, 500, 640, 760, 870].forEach((d) => at(t + d, haptics.light));
     t += T.arrive;
@@ -396,6 +404,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     t += T.doorsDelay;
     at(t, () => {
       haptics.light();
+      playSfx('doors');
       doors.value = timing(1, { duration: T.doors, easing: Easing.inOut(Easing.cubic) });
       burst.value = delay(140, timing(1, { duration: 800, easing: Easing.out(Easing.cubic) }));
     });
@@ -406,10 +415,12 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     t += T.emerge;
     at(t, () => {
       haptics.medium();
+      playSfx('pop');
       land.value = withSequence(timing(1, { duration: 70 }), withSpring(0, { damping: 6, stiffness: 220 }));
       if (hasSparkles) {
         sparkle.value = timing(1, { duration: 300 });
         startTwinkle();
+        playSfx('sparkle');
       }
       announce();
     });
@@ -422,6 +433,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
       at(t, () => {
         stamp.value = withSpring(1, { damping: 9, stiffness: 260 });
         haptics.success();
+        playSfx('stamp');
       });
       t += 250;
     }
@@ -430,6 +442,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
     if (progress.before && progress.gained > 0) {
       const playLevelUp = () => {
         haptics.success();
+        playSfx('levelup');
         lvBanner.value = withSequence(
           timing(1, { duration: 280, easing: Easing.out(Easing.back(2.2)) }),
           delay(650, timing(0, { duration: 220 })),
@@ -455,6 +468,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         const reached = levelAbove(state);
         at(t, () => {
           expFill.value = timing(1, { duration: T.expFill, easing: Easing.inOut(Easing.quad) });
+          playSfx('exp');
         });
         t += T.expFill;
         at(t, () => {
@@ -469,6 +483,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
         at(t, () => {
           setShown(progress.after);
           expFill.value = timing(barFraction(progress.after), { duration: T.expFill, easing: Easing.out(Easing.quad) });
+          if (progress.after.exp > 0) playSfx('exp');
         });
         t += T.expFill;
       }

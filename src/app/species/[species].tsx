@@ -1,11 +1,13 @@
 import { getPet, type Rarity } from '@game/catalog';
 import { levelFor } from '@game/leveling';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ExpBar } from '@/components/ExpBar';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
 import { fetchMyPets } from '@/lib/api';
+import { playSfx } from '@/lib/sfx';
 import { useFocusedData } from '@/lib/useAsync';
 import { colors, spacing } from '@/theme';
 
@@ -15,6 +17,20 @@ export default function SpeciesDetail() {
   const petId = Array.isArray(species) ? species[0] : species;
   const { data: pets, loading } = useFocusedData(fetchMyPets);
   const info = petId ? getPet(petId) : undefined;
+
+  // Opening sound, once per visit: a chirp for a pet you own (plus a twinkle for legendaries and line
+  // variants), a muted blip for one you haven't found.
+  const playedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!info || !pets || playedFor.current === info.petId) return;
+    playedFor.current = info.petId;
+    if (pets.some((pet) => pet.pet_id === info.petId)) {
+      playSfx('open');
+      if (info.rarity === 'legendary' || info.isLineVariant) playSfx('sparkle');
+    } else {
+      playSfx('locked');
+    }
+  }, [info, pets]);
 
   if (!info) return <Text style={styles.empty}>Unknown pet.</Text>;
   if (!pets && loading) return <ActivityIndicator style={{ flex: 1 }} />;

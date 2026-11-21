@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PullReveal, RARITY_COLOR } from '@/components/reveal/PullReveal';
+import { isSfxEnabled, setSfxEnabled } from '@/lib/sfx';
 
 // Dev-only playground for the pull reveal: pick any line and creature from the catalog, replay it,
 // slow it down, or roll a random pull with the real odds and pity.
@@ -69,6 +70,7 @@ export default function RevealPlayground() {
   const [isGold, setGold] = useState(params.gold === '1');
   const [pullKind, setPullKind] = useState<PullKind>(isPullKind(params.pull) ? params.pull : 'new');
   const [timeScale, setTimeScale] = useState(Number(params.speed) || 1);
+  const [soundOn, setSoundOn] = useState(isSfxEnabled());
   const [run, setRun] = useState(0);
   const pity = useRef<PityState>({ sinceEpicPlus: 0, sinceLegendary: 0 });
   const showControls = params.ui !== '0';
@@ -148,6 +150,14 @@ export default function RevealPlayground() {
               onPress={() => canBeVariant && setVariant((v) => !v)}
             />
             <Chip label="Gold" active={isGold} onPress={() => setGold((v) => !v)} />
+            <Chip
+              label={soundOn ? '🔊 Sound on' : '🔇 Sound off'}
+              active={soundOn}
+              onPress={() => {
+                setSfxEnabled(!soundOn);
+                setSoundOn(!soundOn);
+              }}
+            />
             {SPEEDS.map((s) => (
               <Chip key={s.label} label={s.label} active={s.timeScale === timeScale} onPress={() => setTimeScale(s.timeScale)} />
             ))}
