@@ -1,27 +1,32 @@
-import 'expo-sqlite/localStorage/install';
 import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
+import { authStorage } from './authStorage';
+import { IS_PREVIEW } from './preview';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-if (!supabaseUrl || !supabasePublishableKey) {
+if (!IS_PREVIEW && (!supabaseUrl || !supabasePublishableKey)) {
   throw new Error(
-    'Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY. Copy .env.example to .env.local and fill them in.',
+    'Missing EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY. Copy .env.example to .env.local and fill them in, ' +
+      'or run `npm run preview:web` (EXPO_PUBLIC_PREVIEW=1) to use sample data without a backend.',
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
+// In preview mode the client is created but never called (see preview.ts).
+export const supabase = createClient(supabaseUrl ?? 'https://preview.invalid', supabasePublishableKey ?? 'preview', {
   auth: {
-    storage: localStorage,
-    autoRefreshToken: true,
-    persistSession: true,
+    storage: authStorage,
+    autoRefreshToken: !IS_PREVIEW,
+    persistSession: !IS_PREVIEW,
     detectSessionInUrl: false,
   },
 });
 
 // Only refresh tokens while the app is in the foreground.
-AppState.addEventListener('change', (state) => {
-  if (state === 'active') supabase.auth.startAutoRefresh();
-  else supabase.auth.stopAutoRefresh();
-});
+if (!IS_PREVIEW) {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') supabase.auth.startAutoRefresh();
+    else supabase.auth.stopAutoRefresh();
+  });
+}
