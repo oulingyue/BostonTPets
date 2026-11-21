@@ -13,7 +13,7 @@ Those files implement the full roster and pity rules below. Collection and art s
 1. Sign in (email + password).
 2. Scan a BostonTPets QR code. Each code belongs to one station on one T line.
 3. The **server** rolls a pet from that line's table (and pity rules when enabled), then the fare-gate animation reveals it.
-4. The pet lands in your collection under a stable **`pet_id`**. Drawing the same `pet_id` again is a **duplicate**: copies go up and stars level (no second slot).
+4. The pet lands in your collection under a stable **`pet_id`**. Drawing the same `pet_id` again is a **duplicate**: copies go up and the pet gains EXP toward its next level (no second slot).
 
 ---
 
@@ -25,7 +25,7 @@ Every collectible in the game is exactly one row in the catalog with a **globall
 | --- | --- |
 | **`pet_id`** | The drawable collectible. **65** ids. |
 | **Collection slot** | At most one `user_pets` row per `(user_id, pet_id)`. |
-| **Duplicate draw** | Same `pet_id` rolled again → increment `copies`, run gold merge; UI shows higher stars. |
+| **Duplicate draw** | Same `pet_id` rolled again → increment `copies`, run gold merge; the duplicate adds EXP and may level the pet up. |
 | **`scans.id`** | Every scan is its own event (audit / history). Many scans can reference the same `pet_id`. |
 
 Rules:
@@ -148,7 +148,8 @@ Clients never choose outcomes. `scan` calls `record_scan` after a successful rol
 ## Duplicates and levels
 
 - First time you roll a `pet_id`: **new** slot, `copies = 1`, store `first_station` / `first_caught_at`.
-- Same `pet_id` again: **duplicate** — `copies += 1`, stars = `min(copies, 5)`; extras shown as ★★★★★ +N. Cosmetic only.
+- Same `pet_id` again: **duplicate** — `copies += 1`, and the duplicate gives EXP: common 25, rare 50, epic 100, legendary 175. Levels need 100 / 150 / 200 / 250 EXP, up to ★5 (700 EXP). Level and EXP are derived from `copies` (`_shared/game/leveling.ts`), so nothing new is stored. Cosmetic only.
+- The pull reveal fills the EXP bar; each full bar plays a level-up (banner, rising arrows, a new star) and carries the rest into the next level.
 - Gold on a duplicate still upgrades that slot (`is_gold` sticks).
 
 Never create a second collection row for the same `pet_id`.

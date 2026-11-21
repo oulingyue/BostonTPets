@@ -87,6 +87,7 @@ export default {
           return reply({
             status: 'ok',
             stationName: result.station_name!,
+            stationLine: code.line,
             pet: { petId: roll.petId, isGold: roll.isGold, isLineVariant: roll.isLineVariant },
             copies: result.copies!,
             isNew: result.is_new!,

@@ -1,11 +1,11 @@
 import type { ScanResponse } from '@game/api';
-import { parseScanPayload } from '@game/catalog';
+import { getPet, parseScanPayload } from '@game/catalog';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useIsFocused } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FareGateReveal } from '@/components/FareGateReveal';
+import { PullReveal } from '@/components/reveal/PullReveal';
 import { submitScan } from '@/lib/api';
 import { IS_PREVIEW, PREVIEW_CODE } from '@/lib/preview';
 import { colors, spacing } from '@/theme';
@@ -59,10 +59,20 @@ export default function ScanScreen() {
 
   if (state.kind === 'result') {
     const r = state.result;
+    const info = getPet(r.pet.petId);
     return (
       <SafeAreaView style={styles.fill}>
-        <FareGateReveal
-          pet={r.pet}
+        <PullReveal
+          pet={{
+            id: info?.baseId ?? r.pet.petId, // art is keyed by the base creature
+            name: info?.name ?? r.pet.petId,
+            emoji: info?.emoji ?? '?',
+            rarity: info?.rarity ?? 'common',
+            isVariant: r.pet.isLineVariant,
+            isGold: r.pet.isGold,
+          }}
+          // A scan function deployed before stationLine existed won't send it: fall back to the pet's own line.
+          line={r.stationLine ?? info?.line ?? 'red'}
           stationName={r.stationName}
           copies={r.copies}
           isNew={r.isNew}

@@ -132,6 +132,7 @@ export const previewData = {
     return {
       status: 'ok',
       stationName: station.name,
+      stationLine: station.line,
       pet: { petId: roll.petId, isGold: roll.isGold, isLineVariant: roll.isLineVariant },
       copies: existing?.copies ?? 1,
       isNew,

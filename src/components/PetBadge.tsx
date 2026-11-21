@@ -1,13 +1,14 @@
 import { COMMON_COLOR, getPet, GOLD_COLOR, LINE_INFO } from '@game/catalog';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors } from '@/theme';
+import { PetSprite } from './PetSprite';
 
 type Props = { petId: string; owned: boolean; isGold?: boolean; size?: number };
 
 /**
- * Placeholder pet art: emoji on a circle.
- * Line color when the pet is line-exclusive or a line variant; commons stay neutral.
- * Swap the inner <Text> for a sprite keyed by petId later.
+ * Pet art on a circle: line color when the pet is line-exclusive or a line variant; commons stay neutral.
+ * Art comes from src/lib/petArt.ts, keyed by the base creature (a line variant reuses its creature's art).
+ * Pets without art show their emoji. Unowned pets show as a silhouette.
  */
 export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
   const pet = getPet(petId);
@@ -27,7 +28,7 @@ export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
       ]}
       accessibilityLabel={owned ? (pet?.name ?? petId) : 'Not found yet'}
     >
-      <Text style={{ fontSize: size * 0.5, opacity: owned ? 1 : 0.35 }}>{owned ? (pet?.emoji ?? '?') : '?'}</Text>
+      <PetSprite id={pet?.baseId ?? petId} emoji={pet?.emoji ?? '?'} size={size * 0.9} silhouette={!owned} />
     </View>
   );
 }

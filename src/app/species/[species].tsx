@@ -1,6 +1,8 @@
-import { getPet } from '@game/catalog';
+import { getPet, type Rarity } from '@game/catalog';
+import { levelFor } from '@game/leveling';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ExpBar } from '@/components/ExpBar';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
 import { fetchMyPets } from '@/lib/api';
@@ -35,7 +37,8 @@ export default function SpeciesDetail() {
           </Text>
           {owned ? (
             <>
-              <Stars copies={owned.copies} />
+              <Stars copies={owned.copies} level={levelFor(owned.copies, info.rarity).level} />
+              <ExpBarFor copies={owned.copies} rarity={info.rarity} />
               <Text style={styles.meta}>
                 First caught{owned.first_station ? ` at ${owned.first_station}` : ''} ·{' '}
                 {new Date(owned.first_caught_at).toLocaleDateString()}
@@ -50,7 +53,23 @@ export default function SpeciesDetail() {
   );
 }
 
+/** EXP toward the next level, from the duplicate count (rules in _shared/game/leveling.ts). */
+function ExpBarFor({ copies, rarity }: { copies: number; rarity: Rarity }) {
+  const lvl = levelFor(copies, rarity);
+  return (
+    <View style={styles.exp}>
+      <ExpBar
+        level={lvl.level}
+        isMax={lvl.isMax}
+        fill={lvl.isMax ? 1 : lvl.exp / lvl.expToNext}
+        detail={`${lvl.exp} / ${lvl.expToNext} EXP`}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  exp: { maxWidth: 260, marginVertical: 4 },
   container: { padding: spacing.md, gap: spacing.sm },
   hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
   rarity: { fontSize: 13, color: colors.muted, textTransform: 'uppercase', letterSpacing: 1 },
