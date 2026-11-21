@@ -1,4 +1,4 @@
-import { LINES, petName, TOTAL_PETS } from '@game/catalog';
+import { LINES, parsePetId, petName, TOTAL_PETS } from '@game/catalog';
 import { useCallback } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PetBadge } from '@/components/PetBadge';
@@ -60,20 +60,24 @@ export default function ProfileScreen() {
           <Text style={styles.section}>Scan history</Text>
         </View>
       }
-      renderItem={({ item }) => (
-        <View style={styles.historyRow}>
-          <PetBadge species={item.species} line={item.line} owned isGold={item.is_gold} size={40} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.historyPet}>
-              {item.is_gold ? 'Gold ' : ''}
-              {petName(item.line, item.species)}
-            </Text>
-            <Text style={styles.historyMeta}>
-              {item.station_name} · {new Date(item.created_at).toLocaleString()}
-            </Text>
+      renderItem={({ item }) => {
+        const slot = parsePetId(item.pet_id);
+        if (!slot) return null;
+        return (
+          <View style={styles.historyRow}>
+            <PetBadge species={slot.species} line={slot.line} owned isGold={item.is_gold} size={40} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.historyPet}>
+                {item.is_gold ? 'Gold ' : ''}
+                {petName(slot.line, slot.species)}
+              </Text>
+              <Text style={styles.historyMeta}>
+                {item.station_name} · {new Date(item.created_at).toLocaleString()}
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
+        );
+      }}
       ListEmptyComponent={<Text style={styles.empty}>No scans yet.</Text>}
       ListFooterComponent={
         <Pressable

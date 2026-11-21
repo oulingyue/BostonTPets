@@ -1,5 +1,5 @@
 -- Analytics mirror for Tiger Cloud (TimescaleDB). NOT the app runtime DB — see tiger/README.md.
--- Keep record_scan / my_stats bodies in sync with supabase/migrations/20251121210000_game.sql.
+-- Initial schema; apply 002_pet_id.sql after. record_scan: see supabase/migrations/20251121220000_pet_id.sql.
 -- User ids match Supabase Auth UUIDs; no FK to auth.users (different host).
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;

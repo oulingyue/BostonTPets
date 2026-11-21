@@ -1,11 +1,9 @@
 import type { ScanResponse } from '@game/api';
-import type { Line, Species } from '@game/catalog';
 import { IS_PREVIEW, previewData } from './preview';
 import { supabase } from './supabase';
 
 export type OwnedPet = {
-  species: Species;
-  line: Line;
+  pet_id: string;
   copies: number;
   is_gold: boolean;
   first_caught_at: string;
@@ -15,8 +13,7 @@ export type OwnedPet = {
 export type ScanHistoryItem = {
   id: number;
   station_name: string;
-  species: Species;
-  line: Line;
+  pet_id: string;
   is_gold: boolean;
   created_at: string;
 };

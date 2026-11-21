@@ -71,6 +71,11 @@ export const DEMO_ODDS = {
 export const MAX_LEVEL = 5;
 export const TOTAL_PETS = LINES.length * SPECIES.length;
 
+/** Globally unique collection slot id. Skeleton: one drawable per line × species. */
+export function petId(species: Species, line: Line): string {
+  return `${line}_${species}`;
+}
+
 export function petName(line: Line, species: Species): string {
   return `${LINE_INFO[line].name} ${SPECIES_INFO[species].name}`;
 }
@@ -97,4 +102,14 @@ export function isLine(value: string): value is Line {
 
 export function isSpecies(value: string): value is Species {
   return (SPECIES as readonly string[]).includes(value);
+}
+
+/** Inverse of skeleton `petId`. Returns null for full-roster ids until catalog grows. */
+export function parsePetId(id: string): { species: Species; line: Line } | null {
+  const sep = id.indexOf('_');
+  if (sep <= 0) return null;
+  const line = id.slice(0, sep);
+  const species = id.slice(sep + 1);
+  if (!isLine(line) || !isSpecies(species)) return null;
+  return { line, species };
 }

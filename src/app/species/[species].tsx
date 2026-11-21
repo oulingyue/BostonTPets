@@ -1,4 +1,4 @@
-import { isSpecies, LINES, petName, SPECIES_INFO } from '@game/catalog';
+import { isSpecies, LINES, parsePetId, petName, SPECIES_INFO } from '@game/catalog';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PetBadge } from '@/components/PetBadge';
@@ -15,7 +15,12 @@ export default function SpeciesDetail() {
   if (!pets && loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   const info = SPECIES_INFO[species];
-  const byLine = new Map((pets ?? []).filter((p) => p.species === species).map((p) => [p.line, p]));
+  const byLine = new Map(
+    (pets ?? [])
+      .map((p) => ({ p, slot: parsePetId(p.pet_id) }))
+      .filter((x) => x.slot?.species === species)
+      .map((x) => [x.slot!.line, x.p] as const),
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

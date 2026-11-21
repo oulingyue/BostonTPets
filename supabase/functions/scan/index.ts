@@ -1,6 +1,6 @@
 // POST /functions/v1/scan  { payload: "btp:<id>" }
 import { withSupabase } from 'npm:@supabase/server@1';
-import { isLine, ODDS, parseScanPayload } from '../_shared/game/catalog.ts';
+import { isLine, ODDS, parseScanPayload, petId } from '../_shared/game/catalog.ts';
 import type { ScanRequest, ScanResponse } from '../_shared/game/api.ts';
 import { rollPet } from '../_shared/game/roll.ts';
 
@@ -31,11 +31,11 @@ export default {
 
     const roll = rollPet(code.line, { demo });
 
+    const id = petId(roll.species, roll.line);
     const { data, error } = await admin.rpc('record_scan', {
       p_user_id: userId,
       p_code_id: code.id,
-      p_species: roll.species,
-      p_line: roll.line,
+      p_pet_id: id,
       p_is_gold: roll.isGold,
       p_cooldown_hours: demo ? 0 : ODDS.cooldownHours,
     });
@@ -63,7 +63,7 @@ export default {
         return reply({
           status: 'ok',
           stationName: result.station_name!,
-          pet: roll,
+          pet: { petId: id, ...roll },
           copies: result.copies!,
           isNew: result.is_new!,
           becameGold: result.became_gold!,

@@ -2,7 +2,7 @@
 // in-memory sample data, with no Supabase project. Scans are rolled locally with the catalog odds.
 // Never enabled in a normal build: the flag is off unless that env var is set.
 import type { ScanResponse } from '@game/api';
-import { LINES, ODDS, SPECIES, SPECIES_INFO, type Line, type Species } from '@game/catalog';
+import { LINES, ODDS, SPECIES, SPECIES_INFO, petId, parsePetId, type Line, type Species } from '@game/catalog';
 import type { Session } from '@supabase/supabase-js';
 import type { OwnedPet, Profile, ScanHistoryItem, Stats } from './api';
 
@@ -54,33 +54,33 @@ const STATIONS: { name: string; line: Line }[] = [
 ];
 
 const pets: OwnedPet[] = [
-  { species: 'duckling', line: 'red', copies: 2, is_gold: false, first_caught_at: hoursAgo(80), first_station: 'Park Street' },
-  { species: 'turkey', line: 'red', copies: 1, is_gold: false, first_caught_at: hoursAgo(76), first_station: 'Harvard' },
-  { species: 'duckling', line: 'orange', copies: 1, is_gold: false, first_caught_at: hoursAgo(60), first_station: 'Ruggles' },
-  { species: 'duckling', line: 'green', copies: 3, is_gold: false, first_caught_at: hoursAgo(55), first_station: 'Kenmore' },
-  { species: 'turkey', line: 'green', copies: 1, is_gold: false, first_caught_at: hoursAgo(50), first_station: 'BU Central' },
-  { species: 'seal', line: 'green', copies: 1, is_gold: false, first_caught_at: hoursAgo(40), first_station: 'Kenmore' },
-  { species: 'turkey', line: 'blue', copies: 1, is_gold: false, first_caught_at: hoursAgo(30), first_station: 'Government Center' },
-  { species: 'seal', line: 'blue', copies: 2, is_gold: true, first_caught_at: hoursAgo(26), first_station: 'Aquarium' },
-  { species: 'duckling', line: 'silver', copies: 7, is_gold: false, first_caught_at: hoursAgo(20), first_station: 'South Station' },
+  { pet_id: petId('duckling', 'red'), copies: 2, is_gold: false, first_caught_at: hoursAgo(80), first_station: 'Park Street' },
+  { pet_id: petId('turkey', 'red'), copies: 1, is_gold: false, first_caught_at: hoursAgo(76), first_station: 'Harvard' },
+  { pet_id: petId('duckling', 'orange'), copies: 1, is_gold: false, first_caught_at: hoursAgo(60), first_station: 'Ruggles' },
+  { pet_id: petId('duckling', 'green'), copies: 3, is_gold: false, first_caught_at: hoursAgo(55), first_station: 'Kenmore' },
+  { pet_id: petId('turkey', 'green'), copies: 1, is_gold: false, first_caught_at: hoursAgo(50), first_station: 'BU Central' },
+  { pet_id: petId('seal', 'green'), copies: 1, is_gold: false, first_caught_at: hoursAgo(40), first_station: 'Kenmore' },
+  { pet_id: petId('turkey', 'blue'), copies: 1, is_gold: false, first_caught_at: hoursAgo(30), first_station: 'Government Center' },
+  { pet_id: petId('seal', 'blue'), copies: 2, is_gold: true, first_caught_at: hoursAgo(26), first_station: 'Aquarium' },
+  { pet_id: petId('duckling', 'silver'), copies: 7, is_gold: false, first_caught_at: hoursAgo(20), first_station: 'South Station' },
 ];
 
-// One history row per copy, newest first.
 let nextId = 1;
 const history: ScanHistoryItem[] = pets
   .flatMap((p, i) =>
     Array.from({ length: p.copies }, (_, c) => ({
       id: nextId++,
       station_name: p.first_station ?? 'Park Street',
-      species: p.species,
-      line: p.line,
+      pet_id: p.pet_id,
       is_gold: p.is_gold && c === p.copies - 1,
       created_at: hoursAgo(80 - i * 7 - c * 2),
     })),
   )
   .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
-const visitedLines = new Set<Line>(history.map((h) => h.line));
+const visitedLines = new Set<Line>(
+  history.map((h) => parsePetId(h.pet_id)?.line).filter((l): l is Line => !!l),
+);
 
 export const previewData = {
   async pets(): Promise<OwnedPet[]> {
@@ -105,15 +105,15 @@ export const previewData = {
     const species = pickSpecies();
     const isGold = Math.random() < ODDS.goldChance;
 
-    const existing = pets.find((p) => p.species === species && p.line === line);
+    const id = petId(species, line);
+    const existing = pets.find((p) => p.pet_id === id);
     const wasGold = existing?.is_gold ?? false;
     if (existing) {
       existing.copies += 1;
       existing.is_gold ||= isGold;
     } else {
       pets.push({
-        species,
-        line,
+        pet_id: id,
         copies: 1,
         is_gold: isGold,
         first_caught_at: new Date().toISOString(),
@@ -123,17 +123,16 @@ export const previewData = {
     history.unshift({
       id: nextId++,
       station_name: station.name,
-      species,
-      line,
+      pet_id: id,
       is_gold: isGold,
       created_at: new Date().toISOString(),
     });
-    visitedLines.add(station.line);
+    visitedLines.add(line);
 
     return {
       status: 'ok',
       stationName: station.name,
-      pet: { species, line, isGold },
+      pet: { petId: id, species, line, isGold },
       copies: existing?.copies ?? 1,
       isNew: !existing,
       becameGold: isGold && !wasGold,

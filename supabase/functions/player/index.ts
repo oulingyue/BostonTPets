@@ -21,7 +21,7 @@ export default {
         case 'pets': {
           const { data, error } = await admin
             .from('user_pets')
-            .select('species, line, copies, is_gold, first_caught_at, first_station')
+            .select('pet_id, copies, is_gold, first_caught_at, first_station')
             .eq('user_id', userId);
           if (error) throw error;
           return Response.json(data);
@@ -30,7 +30,7 @@ export default {
           const limit = Math.min(Math.max(body.limit ?? 50, 1), 100);
           const { data, error } = await admin
             .from('scans')
-            .select('id, station_name, species, line, is_gold, created_at')
+            .select('id, station_name, pet_id, is_gold, created_at')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(limit);
