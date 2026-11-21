@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FareGateReveal } from '@/components/FareGateReveal';
 import { submitScan } from '@/lib/api';
+import { IS_PREVIEW, PREVIEW_CODE } from '@/lib/preview';
 import { colors, spacing } from '@/theme';
 
 type ScanState =
@@ -72,9 +73,10 @@ export default function ScanScreen() {
     );
   }
 
-  if (!permission) return <View style={styles.fill} />;
+  // Preview mode has no camera: a "Simulate scan" button stands in for a QR code.
+  if (!IS_PREVIEW && !permission) return <View style={styles.fill} />;
 
-  if (!permission.granted) {
+  if (!IS_PREVIEW && !permission?.granted) {
     return (
       <SafeAreaView style={[styles.fill, styles.center]}>
         <Text style={styles.title}>Camera needed</Text>
@@ -87,8 +89,8 @@ export default function ScanScreen() {
   }
 
   return (
-    <View style={styles.fill}>
-      {isFocused && (
+    <View style={[styles.fill, styles.cameraBackdrop]}>
+      {isFocused && !IS_PREVIEW && (
         <CameraView
           style={StyleSheet.absoluteFill}
           facing="back"
@@ -100,6 +102,11 @@ export default function ScanScreen() {
         <Text style={styles.hint}>Point at a BostonTPets code</Text>
         <View style={styles.reticle} />
         {state.kind === 'submitting' && <ActivityIndicator size="large" color="white" />}
+        {IS_PREVIEW && state.kind === 'scanning' && (
+          <Pressable style={styles.button} onPress={() => onBarcodeScanned({ data: PREVIEW_CODE } as BarcodeScanningResult)}>
+            <Text style={styles.buttonText}>Simulate scan (preview)</Text>
+          </Pressable>
+        )}
         {state.kind === 'message' && (
           <View style={styles.card}>
             <Text style={styles.title}>{state.title}</Text>
@@ -123,6 +130,7 @@ function timeUntil(iso: string): string {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.background },
+  cameraBackdrop: { backgroundColor: '#111' },
   center: { alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
   overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.lg },
   hint: {
