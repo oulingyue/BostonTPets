@@ -10,7 +10,7 @@ Those files implement the full roster and pity rules below. Collection and art s
 
 ## Core loop
 
-1. Sign in (email + password).
+1. Sign up (display name, unique @username, email, password) or sign in.
 2. Scan a BostonTPets QR code. Each code belongs to one station on one T line.
 3. The **server** rolls a pet from that line's table (and pity rules when enabled), then the fare-gate animation reveals it.
 4. The pet lands in your collection under a stable **`pet_id`**. Drawing the same `pet_id` again is a **duplicate**: copies go up and the pet gains EXP toward its next level (no second slot).
@@ -168,13 +168,13 @@ Never create a second collection row for the same `pet_id`.
 
 ## Screens
 
-Tabs: **Collection**, **Scan** (center), **Friends**, **Profile** (MVP — Friends tab can ship after core scan loop is stable).
+Tabs: **Collection**, **Scan** (center), **Profile**. Social screens open from Profile; there is no separate Friends tab.
 
-**MVP includes** friends (add + view collections) and leaderboards. Not implemented in the repo yet; spec below.
+**MVP includes** following (search, follow, view other people's profiles and pets) and leaderboards. Following is built (app + `social` Edge Function + `follows` table). Leaderboards are spec only.
 
 ### Collection
 
-- **Skeleton:** "X / 20", four species cards, dots per line, species detail route.
+- **Skeleton:** "X / 20", four species cards, dots per line (filled = collected, gold ring = gold), species detail route with all 5 line variants, stars, first-caught station and date.
 - **Target:** "X / 65", grouped by **tier** and/or **line** (filter chips). Each card shows base + variant progress. Detail: stars, gold ring, first station, first caught date.
 - **Refine (stretch):** search, "missing only", line-colored progress rings.
 
@@ -182,35 +182,31 @@ Tabs: **Collection**, **Scan** (center), **Friends**, **Profile** (MVP — Frien
 
 Camera + reticle; unmount when tab blurs.
 
-- Success → fare-gate reveal (rarity color or gold; NEW! / TURNED GOLD! / LINE VARIANT! as needed).
+- Success → fare-gate reveal (a CharlieCard taps, the gate light shows the rarity color or gold, the gates open, the pet springs in; NEW! / TURNED GOLD! / LINE VARIANT! as needed).
 - Cooldown → "Train already left 🚋 … next departure in Xh Ym".
-- Invalid / offline → message + Scan again.
+- Invalid / inactive code / offline → message + Scan again.
 
 ### Profile
 
-Display name, email, stat tiles (collected, gold, scans, lines visited), scan history, sign out. Link to **leaderboards** (or show a compact top-3 teaser).
+Avatar, display name, @username, last active and joined date, Pets / Following / Followers counts, an **Add friends** button, stat tiles (collected, gold, scans, lines visited), then a **Pets | History** toggle. Pets is a grid of owned pets; History is the scan history (own profile only). Link to **leaderboards** (or a compact top-3 teaser). Sign out at the bottom.
 
-### Friends (MVP)
+- **Pet sheet:** tapping any pet opens a bottom sheet with its level (copies, capped at ★5, extras counted), first caught date and gold status. It never shows the station, because the same sheet is used on other people's profiles.
+- **Add friends:** search by display name (contains, case-insensitive, 3+ characters, up to 20 results; names that start with the query come first). Each result has a Follow button.
+- **Someone's profile** (`/user/<handle>`): the same header with a Follow / Following button and their pet grid. No email, scan history or stations.
+- **Following / Followers** (`/user/<handle>/follows`): two tabs of people, each with a Follow button.
+
+### Following (MVP)
 
 **Goals:** ride with classmates, compare collections, light social proof for the hackathon demo.
 
-**Add a friend**
-
-- By **display name** search (must match exactly one profile), or by **`friend_code`** (short unique code on `profiles`, generated at sign-up).
-- Request → **pending** until the other user accepts (symmetric friendship only; no one-way follow in MVP).
-- Cap **50** friends per user for MVP (abuse guard).
-
-**Friend list**
-
-- Name, `X / TOTAL_PETS` collected, gold count, last active (optional: relative time of last scan).
-- Tap → **friend profile**: read-only collection (same layout as own Collection, but no scan). Show their pets with stars/gold; hide email and scan history details unless we later add a privacy toggle (MVP: **no** scan history on friend view).
+- **One-way follow**, no approval, like Instagram. The UI says "Following" and "Followers", shows a "Follows you" tag, and labels the button "Follow back" when they already follow you.
+- **Profiles are public** to every signed-in user: display name, username, last active, joined date, follow counts, stats and pets. Email, scan history and stations are never shown to anyone else, since stations reveal where someone rides.
+- **Usernames** are unique, lowercase, 3–20 characters of `a–z`, `0–9` and `_` (`src/lib/handle.ts`). They are chosen at sign-up, with a live availability check.
+- **Last active** is set by the backend when the app opens or comes to the foreground (`touch_last_active`), not taken from Supabase's last sign-in, which goes stale because the app keeps you signed in.
 
 **Not in MVP:** trading/gifting pets, blocking, DMs, activity feed.
 
-**API shape (planned)**
-
-- Extend `player` or add Edge Function `social` with `resource`: `friend_search`, `friend_request`, `friend_accept`, `friend_decline`, `friends_list`, `friend_pets` (target `user_id` must be an accepted friend).
-- RLS: users never read arbitrary `user_pets`; only self or via service role after friendship check.
+**API shape:** Edge Function `social` (`supabase/functions/social`) taking `{ action, ...params }`; the actions are listed at the top of the social section in `src/lib/api.ts`. RLS stays read-own: other people's pets and profiles are served by `social` with the service role, without `first_station`.
 
 ### Leaderboards (MVP)
 
@@ -252,18 +248,23 @@ Expo (SDK 58, Expo Router, TypeScript)          Supabase
 
 Runtime game DB is **Supabase Postgres**. Tiger is optional (MLH analytics); Edge Functions do not write to Tiger directly.
 
+Profiles, search and follows go through a third Edge Function, `social`. Two small RPCs are called directly by the app: `handle_available` (works signed out, for the sign-up form) and `touch_last_active`.
+
 ---
 
 ## Data model
 
 ### Current (Supabase)
 
-- `profiles(id, display_name, is_demo)`
+- `profiles(id, display_name, handle, is_demo, created_at, last_active_at)`: created by a trigger on sign-up, which copies `display_name` and `handle` from the sign-up metadata. `handle` is unique and must match `^[a-z0-9_]{3,20}$`. Clients may update only `display_name`.
 - `scan_codes`, `user_pets(user_id, pet_id, copies, …)` — PK `(user_id, pet_id)`
 - `scans` — one row per draw; `pet_id`, `code_line` (station line for stats)
 - `record_scan(p_user_id, p_code_id, p_pet_id, p_is_gold, p_cooldown_hours)`, `my_stats(...)` — service role via Edge Functions
+- `handle_available(p_handle)`, `touch_last_active()` — security-definer RPCs the app calls directly
+- `follows(follower_id, followee_id, created_at)`: PK (follower, followee), with a check that you can't follow yourself. RLS on with no policies: written and read only through `social`.
+- `user_summaries(p_viewer, p_ids)`, `search_users(p_viewer, p_prefix)` — service-role helpers for `social`
 
-Migration: `supabase/migrations/20251121220000_pet_id.sql`. Skeleton ids: `{line}_{species}`.
+Migrations: `20251121220000_pet_id.sql` (collection keyed by `pet_id`), `20251122130000_profile_social.sql` (handle, timestamps, RPCs), `20251122140000_follows.sql` (follows + social helpers), `20251122150000_search_display_name.sql` (search by display name). Skeleton ids: `{line}_{species}`.
 
 Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.ts`, not Postgres enums for pets.
 
@@ -276,8 +277,6 @@ Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.t
 
 ### Planned (MVP — not in DB yet)
 
-- `profiles.friend_code text UNIQUE NOT NULL` (e.g. 8-char alphanumeric, generated on insert).
-- `friendships (id, user_a, user_b, status, created_at)` with `user_a < user_b` canonical pair, `status` in `pending`, `accepted`, `declined`; unique on `(user_a, user_b)`.
 - Leaderboards: no new tables — aggregate `user_pets` / `scans` via RPC or views.
 
 Tiger mirror: [tiger/README.md](tiger/README.md).
@@ -290,26 +289,26 @@ Order work so the **demo never breaks**.
 
 | Priority | Work | Outcome |
 | --- | --- | --- |
-| **P0** | `supabase db push`, deploy `scan` + `player`, phone E2E | Judges can scan QR and see a pet |
+| **P0** | `supabase db push`, deploy `scan` + `player` + `social`, phone E2E | Judges can scan QR and see a pet |
 | **P0** | Demo poster QRs + `is_demo` account | Smooth booth loop |
 | **P1** | Expand `catalog.ts` + `roll.ts` + `roll.test.ts` (per-line table, variants) | In the repo. Redeploy `scan` after `db push`. |
 | **P1** | ~~DB `pet_id` migration~~ (see `20251121220000_pet_id.sql`) + redeploy functions | Collection keyed by `pet_id` |
 | **P2** | Collection UI for 65 slots (filters, counts) | App matches target design |
 | **P2** | Pity counters in DB + roll integration | In the repo (`roll_pity`). Needs `db push` + redeploy. |
-| **P2** | **Friends** — migration + `social`/`player` + Friends tab + friend collection view | Social demo for judges |
+| **P2** | ~~**Following** — `follows` migration + `social` Edge Function~~ (built; test on device) | Social demo for judges |
 | **P2** | **Leaderboards** — RPC + UI (Collectors / Gold / Scans) | Arcade hook in pitch |
 | **P3** | Tiger scan replication + one chart | MLH Tiger story |
 | **P4** | Collection UI polish, full roster, pity | After social MVP works |
 
-The 65-pet catalog and pity are in the repo. Friends + leaderboards stay **in MVP scope**. Collection filters and art can trail that.
+The 65-pet catalog and pity are in the repo. Following + leaderboards stay **in MVP scope**. Collection filters and art can trail that.
 
 ---
 
 ## Out of scope (for now)
 
-Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, one-way follows, seasonal leaderboard resets.
+Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, seasonal leaderboard resets.
 
-**In MVP scope (design only until built):** friends (add, accept, view pets), leaderboards (collectors / gold / scans). Pity and the 65-pet roster are implemented in the roll; collection layout can still trail.
+**In MVP scope (design only until built):** leaderboards (collectors / gold / scans). Pity and the 65-pet roster are implemented in the roll; collection layout can still trail.
 
 ---
 

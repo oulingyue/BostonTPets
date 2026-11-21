@@ -1,5 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
+import { touchLastActive } from './api';
 import { IS_PREVIEW, previewAuth } from './preview';
 import { supabase } from './supabase';
 
@@ -22,6 +24,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // "Last active" on profiles: mark the user active on sign-in and whenever the app comes to the foreground.
+  const userId = state.session?.user.id;
+  useEffect(() => {
+    if (!userId) return;
+    touchLastActive();
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') touchLastActive();
+    });
+    return () => sub.remove();
+  }, [userId]);
+
   return <SessionContext.Provider value={state}>{children}</SessionContext.Provider>;
 }
 
@@ -36,7 +49,7 @@ export async function signIn(email: string, password: string) {
 }
 
 /** Returns true if the user is signed in immediately, false if they must confirm their email first. */
-export async function signUp(email: string, password: string, displayName: string) {
+export async function signUp(email: string, password: string, displayName: string, handle: string) {
   if (IS_PREVIEW) {
     previewAuth.signIn();
     return true;
@@ -44,7 +57,8 @@ export async function signUp(email: string, password: string, displayName: strin
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    // The sign-up trigger copies these into profiles. It must reject a taken handle (unique index).
+    options: { data: { display_name: displayName, handle } },
   });
   if (error) throw error;
   return data.session !== null;
