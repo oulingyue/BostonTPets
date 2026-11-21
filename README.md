@@ -97,10 +97,10 @@ The reveal, level-ups, tapping your pet, and opening pets in the collection all 
 
 Creatures show their emoji until they have art. The style is cute 16-bit pixel art.
 
-The five legendaries (lobster, snapping turtle, red fox, humpback whale, snowy owl) are drawn in code by `scripts/pixel-pets/generate.mjs`: each is a 32×32 sprite built from shapes, with shading, outlines, and a blink frame. Edit a pet there and run `npm run pets` to regenerate its PNGs. You can also add art by hand:
+Every pet is drawn in code by `scripts/pixel-pets/generate.mjs`: each is a 32×32 sprite built from shapes (birds, sitting critters, and fish share templates), with shading, outlines, and a blink frame. Edit a pet there and run `npm run pets` to regenerate its PNGs and `src/lib/pixelPetArt.ts`. To replace a pet with hand-made art instead:
 
 1. Save a square PNG with a transparent background as `assets/pets/<id>.png`. The id is the creature's id in `catalog.ts`, such as `lobster` or `mit_beaver`.
-2. Add a line for it in `src/lib/petArt.ts`. The app then shows the art everywhere: collection, history, and the pull reveal.
+2. Add it to `HAND_MADE` in `src/lib/petArt.ts`, which overrides the generated art. The app then shows it everywhere: collection, history, and the pull reveal.
 3. Optional: an eyes-closed version saved as `assets/pets/<id>-blink.png`, and added as `blink`, makes the pet blink.
 
 ## Deploy backend
