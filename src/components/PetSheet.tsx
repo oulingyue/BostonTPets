@@ -1,4 +1,4 @@
-import { getPet, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
+import { getPet, GOLD_COLOR, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
 import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,7 +47,6 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
       <View style={styles.hero}>
         <PetBadge petId={pet.pet_id} owned isGold={pet.is_gold} size={112} />
         <Text style={styles.title} accessibilityRole="header">
-          {pet.is_gold ? 'Gold ' : ''}
           {info.name}
         </Text>
         <View style={styles.chips}>
@@ -58,6 +57,7 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
               {LINE_INFO[line].name}
             </Text>
           )}
+          {pet.is_gold && <Text style={[styles.chip, styles.goldChip]}>★ Gold</Text>}
         </View>
       </View>
 
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 10 },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
   chips: { flexDirection: 'row', gap: spacing.sm },
+  goldChip: { backgroundColor: GOLD_COLOR, color: '#3a2a00' },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 3,

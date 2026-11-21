@@ -1,4 +1,4 @@
-import { getPet } from '@game/catalog';
+import { getPet, GOLD_COLOR } from '@game/catalog';
 import { Link, router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -103,8 +103,8 @@ export default function ProfileScreen() {
                 <PetBadge petId={item.pet_id} owned isGold={item.is_gold} size={40} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.historyPet}>
-                    {item.is_gold ? 'Gold ' : ''}
                     {getPet(item.pet_id)?.name ?? item.pet_id}
+                    {item.is_gold && <Text style={styles.goldTag}> GOLD </Text>}
                   </Text>
                   <Text style={styles.historyMeta}>
                     {item.station_name} · {new Date(item.created_at).toLocaleString()}
@@ -133,6 +133,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  goldTag: { backgroundColor: GOLD_COLOR, color: '#3a2a00', fontSize: 11, fontWeight: '900' },
   container: { padding: spacing.md, gap: spacing.md },
   error: { color: colors.danger, textAlign: 'center' },
   demo: { fontSize: 11, fontWeight: '800', color: colors.danger, letterSpacing: 1 },

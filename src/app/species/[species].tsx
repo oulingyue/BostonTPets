@@ -1,4 +1,4 @@
-import { getPet, type Rarity } from '@game/catalog';
+import { getPet, GOLD_COLOR, type Rarity } from '@game/catalog';
 import { levelFor } from '@game/leveling';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
@@ -49,8 +49,8 @@ export default function SpeciesDetail() {
       <View style={styles.row}>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={[styles.petName, !owned && { color: colors.muted }]}>
-            {owned?.is_gold ? 'Gold ' : ''}
             {info.name}
+            {owned?.is_gold && <Text style={styles.goldTag}> GOLD </Text>}
           </Text>
           {owned ? (
             <>
@@ -86,6 +86,7 @@ function ExpBarFor({ copies, rarity }: { copies: number; rarity: Rarity }) {
 }
 
 const styles = StyleSheet.create({
+  goldTag: { backgroundColor: GOLD_COLOR, color: '#3a2a00', fontSize: 12, fontWeight: '900' },
   exp: { maxWidth: 260, marginVertical: 4 },
   container: { padding: spacing.md, gap: spacing.sm },
   hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },

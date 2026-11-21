@@ -17,7 +17,7 @@ const CIRCLE = 56;
 
 /**
  * One cell of the collection grid: the pet's badge, name and rarity.
- * Gold pets get PetBadge's gold border.
+ * Gold pets get PetBadge's gold ring, GOLD stamp, and shine.
  * Pets the player hasn't found show as a silhouette named "???".
  */
 export function CreatureBadge({ petId, owned, width, onPress }: Props) {
@@ -37,7 +37,7 @@ export function CreatureBadge({ petId, owned, width, onPress }: Props) {
         <PetBadge petId={petId} owned={isOwned} isGold={owned?.is_gold} size={CIRCLE} />
       </View>
       <Text style={[styles.name, !isOwned && { color: colors.muted }]} numberOfLines={2}>
-        {isOwned ? `${owned.is_gold ? 'Gold ' : ''}${pet.name}` : '???'}
+        {isOwned ? pet.name : '???'}
       </Text>
       <Text style={[styles.rarity, { color: isOwned ? rarityStyle[pet.rarity].fg : colors.muted }]}>{rarityLabel}</Text>
     </Pressable>
