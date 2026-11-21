@@ -32,7 +32,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:game": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test supabase/functions/_shared/game/roll.test.ts",
-    "preview:web": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start --web"
+    "preview:web": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start --web",
+    "lint": "expo lint"
   },
   "private": true
 }
