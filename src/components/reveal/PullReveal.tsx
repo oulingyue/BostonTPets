@@ -1,5 +1,5 @@
 import { Silkscreen_400Regular, Silkscreen_700Bold, useFonts } from '@expo-google-fonts/silkscreen';
-import { LINE_INFO, type Line, type Rarity } from '@game/catalog';
+import { GOLD_COLOR, LINE_INFO, type Line, type Rarity } from '@game/catalog';
 import { EXP_TO_NEXT, LEVEL_CAP, pullProgress, type LevelState } from '@game/leveling';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -61,8 +61,6 @@ export type RevealPet = {
   /** Shown until the creature has art. */
   emoji: string;
   rarity: PullRarity;
-  /** The rarer line-colored version. Commons never have one. */
-  isVariant: boolean;
   /** Gold pulls (1%) get a "Gold" name and gold sparkles. */
   isGold?: boolean;
 };
@@ -160,7 +158,7 @@ let hasSeenFullReveal = false;
  *   3. a train in the line's color pulls in (the Silver Line sends a bus),
  *   4. the doors open and the pet hops out onto the platform,
  *   5. for duplicates, the EXP bar fills; each full bar is a level-up (banner, rising arrows, a new star).
- * Legendary pulls flash twice and shake the station. Line variants sparkle in the line color.
+ * Legendary pulls flash twice and shake the station. Gold pulls sparkle.
  */
 export function PullReveal({ pet, line, stationName, copies, isNew, becameGold = false, onDone, timeScale = 1 }: Props) {
   const reduceMotion = useReducedMotion();
@@ -172,17 +170,13 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
   const lineInfo = LINE_INFO[line];
   const rarityColor = RARITY_COLOR[pet.rarity];
   const isLegendary = pet.rarity === 'legendary';
-  const showVariant = pet.isVariant && pet.rarity !== 'common';
   const isGold = pet.isGold === true;
-  const hasSparkles = isLegendary || showVariant || isGold;
+  const hasSparkles = isLegendary || isGold;
   const displayName = `${isGold ? 'Gold ' : ''}${pet.name}`;
   const vehicle = line === 'silver' ? BUS : TRAIN;
   const palette = useMemo(() => vehiclePalette(lineInfo.color), [lineInfo.color]);
   const cardColors = useMemo(() => cardPalette(lineInfo.color), [lineInfo.color]);
-  const sparkleColors = useMemo(
-    () => sparklePalette(showVariant ? lineInfo.color : RARITY_COLOR.legendary),
-    [showVariant, lineInfo.color],
-  );
+  const sparkleColors = useMemo(() => sparklePalette(isGold ? GOLD_COLOR : RARITY_COLOR.legendary), [isGold]);
 
   const steps = useMemo(() => TIERS.slice(0, TIERS.indexOf(pet.rarity) + 1).map((t) => RARITY_COLOR[t]), [pet.rarity]);
   // level 0 = lights off, level i = steps[i - 1]
@@ -318,9 +312,8 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
   };
 
   useEffect(() => {
-    const variantText = showVariant ? `, ${lineInfo.name} variant` : '';
     const announce = () =>
-      AccessibilityInfo.announceForAccessibility(`${displayName}, ${RARITY_LABEL[pet.rarity]}${variantText}`);
+      AccessibilityInfo.announceForAccessibility(`${displayName}, ${RARITY_LABEL[pet.rarity]}`);
     if (reduceMotion) {
       showFinalState();
       haptics.success();
@@ -418,7 +411,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
       info.value = timing(1, { duration: T.info, easing: Easing.out(Easing.cubic) });
     });
     t += T.info;
-    if (isNew || showVariant || becameGold) {
+    if (isNew || becameGold) {
       at(t, () => {
         stamp.value = withSpring(1, { damping: 9, stiffness: 260 });
         haptics.success();
@@ -555,8 +548,6 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
   }));
   const starsStyle = useAnimatedStyle(() => ({ transform: [{ scale: 1 + (1 - starPop.value) * 0.6 }] }));
 
-  const variantLabel = `${lineInfo.name} variant`;
-
   return (
     <Pressable style={styles.root} onPress={canSkip && !finished ? showFinalState : undefined} accessible={false}>
       <Animated.View
@@ -641,7 +632,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
           ))}
         </View>
 
-        {/* The pet, its shadow, and sparkles for legendaries and line variants */}
+        {/* The pet, its shadow, and sparkles for legendaries and gold */}
         <Animated.View style={[styles.abs, { left: pet0.x - 5 * P, top: petFeetY - Math.round(petSize * 0.12) - 2 * P }, shadowStyle]}>
           <PixelSprite rows={SHADOW} palette={SHADOW_PALETTE} pixel={P} />
         </Animated.View>
@@ -730,12 +721,6 @@ export function PullReveal({ pet, line, stationName, copies, isNew, becameGold =
             <Text style={[styles.name, pixelFontBold]} numberOfLines={2}>
               {displayName}
             </Text>
-            {showVariant && (
-              <Animated.View style={[styles.variantChip, { borderColor: lineInfo.color }, stampStyle]}>
-                <View style={[styles.variantDot, { backgroundColor: lineInfo.color }]} />
-                <Text style={[styles.variantText, pixelFont]}>{variantLabel.toUpperCase()}</Text>
-              </Animated.View>
-            )}
             <Animated.View style={starsStyle}>
               <Stars copies={copies} level={shown.level} size={20} />
             </Animated.View>
@@ -921,9 +906,6 @@ const styles = StyleSheet.create({
   rarityChip: { paddingHorizontal: 10, paddingVertical: 3, borderWidth: 3, borderColor: C.ink },
   rarityText: { fontSize: 12, fontWeight: '800', letterSpacing: 2 },
   name: { fontSize: 22, fontWeight: '800', color: C.ink, textAlign: 'center' },
-  variantChip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 3, paddingHorizontal: 8, paddingVertical: 2 },
-  variantDot: { width: 10, height: 10 },
-  variantText: { fontSize: 11, color: C.ink, letterSpacing: 1 },
   button: { marginTop: 4, backgroundColor: C.ink, paddingHorizontal: 28, paddingVertical: 12 },
   buttonPressed: { transform: [{ translateY: 2 }] },
   buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15, letterSpacing: 2 },

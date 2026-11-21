@@ -88,7 +88,7 @@ export default {
             status: 'ok',
             stationName: result.station_name!,
             stationLine: code.line,
-            pet: { petId: roll.petId, isGold: roll.isGold, isLineVariant: roll.isLineVariant },
+            pet: { petId: roll.petId, isGold: roll.isGold },
             copies: result.copies!,
             isNew: result.is_new!,
             becameGold: result.became_gold!,

@@ -6,8 +6,8 @@ import { PetSprite } from './PetSprite';
 type Props = { petId: string; owned: boolean; isGold?: boolean; size?: number };
 
 /**
- * Pet art on a circle: line color when the pet is line-exclusive or a line variant; commons stay neutral.
- * Art comes from src/lib/petArt.ts, keyed by the base creature (a line variant reuses its creature's art).
+ * Pet art on a circle: line color for a line-exclusive, neutral for a shared common.
+ * Art comes from src/lib/petArt.ts, keyed by pet id.
  * Pets without art show their emoji. Unowned pets show as a silhouette.
  */
 export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
@@ -28,7 +28,7 @@ export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
       ]}
       accessibilityLabel={owned ? (pet?.name ?? petId) : 'Not found yet'}
     >
-      <PetSprite id={pet?.baseId ?? petId} emoji={pet?.emoji ?? '?'} size={size * 0.9} silhouette={!owned} />
+      <PetSprite id={petId} emoji={pet?.emoji ?? '?'} size={size * 0.9} silhouette={!owned} />
     </View>
   );
 }
