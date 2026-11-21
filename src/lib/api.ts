@@ -72,7 +72,7 @@ export async function submitScan(payload: string): Promise<ScanResponse> {
 
 // --- social: profiles, search and follows --------------------------------------
 //
-// Reads of other people go through the `social` Edge Function (planned: supabase/functions/social),
+// Reads of other people go through the `social` Edge Function (supabase/functions/social),
 // since RLS only lets you read your own rows. Request body: { action, ...params }.
 //
 //   action             params                              returns

@@ -169,7 +169,7 @@ Never create a second collection row for the same `pet_id`.
 
 Tabs: **Collection**, **Scan** (center), **Profile**. Social screens open from Profile; there is no separate Friends tab.
 
-**MVP includes** following (search, follow, view other people's profiles and pets) and leaderboards. Following is built in the app against preview data; its backend is a follow-up (see [Data model](#data-model)). Leaderboards are spec only.
+**MVP includes** following (search, follow, view other people's profiles and pets) and leaderboards. Following is built (app + `social` Edge Function + `follows` table). Leaderboards are spec only.
 
 ### Collection
 
@@ -205,7 +205,7 @@ Avatar, display name, @username, last active and joined date, Pets / Following /
 
 **Not in MVP:** trading/gifting pets, blocking, DMs, activity feed.
 
-**API shape:** Edge Function `social` (not written yet) taking `{ action, ...params }`; the actions are listed at the top of the social section in `src/lib/api.ts`. RLS stays read-own: other people's pets and profiles are served by `social` with the service role, without `first_station`.
+**API shape:** Edge Function `social` (`supabase/functions/social`) taking `{ action, ...params }`; the actions are listed at the top of the social section in `src/lib/api.ts`. RLS stays read-own: other people's pets and profiles are served by `social` with the service role, without `first_station`.
 
 ### Leaderboards (MVP)
 
@@ -247,7 +247,7 @@ Expo (SDK 58, Expo Router, TypeScript)          Supabase
 
 Runtime game DB is **Supabase Postgres**. Tiger is optional (MLH analytics); Edge Functions do not write to Tiger directly.
 
-Profiles, search and follows go through a third Edge Function, `social` (planned). Two small RPCs are called directly by the app: `handle_available` (works signed out, for the sign-up form) and `touch_last_active`.
+Profiles, search and follows go through a third Edge Function, `social`. Two small RPCs are called directly by the app: `handle_available` (works signed out, for the sign-up form) and `touch_last_active`.
 
 ---
 
@@ -260,8 +260,10 @@ Profiles, search and follows go through a third Edge Function, `social` (planned
 - `scans` — one row per draw; `pet_id`, `code_line` (station line for stats)
 - `record_scan(p_user_id, p_code_id, p_pet_id, p_is_gold, p_cooldown_hours)`, `my_stats(...)` — service role via Edge Functions
 - `handle_available(p_handle)`, `touch_last_active()` — security-definer RPCs the app calls directly
+- `follows(follower_id, followee_id, created_at)`: PK (follower, followee), with a check that you can't follow yourself. RLS on with no policies: written and read only through `social`.
+- `user_summaries(p_viewer, p_ids)`, `search_users(p_viewer, p_prefix)` — service-role helpers for `social`
 
-Migrations: `20251121220000_pet_id.sql` (collection keyed by `pet_id`), `20251121230000_profile_social.sql` (handle, timestamps, RPCs). Skeleton ids: `{line}_{species}`.
+Migrations: `20251121220000_pet_id.sql` (collection keyed by `pet_id`), `20251121230000_profile_social.sql` (handle, timestamps, RPCs), `20251121240000_follows.sql` (follows + social helpers). Skeleton ids: `{line}_{species}`.
 
 Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.ts`, not Postgres enums for pets.
 
@@ -273,7 +275,6 @@ Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.t
 
 ### Planned (MVP — not in DB yet)
 
-- `follows(follower_id, followee_id, created_at)`: PK (follower, followee), with a check that you can't follow yourself. Written only through `social`.
 - Leaderboards: no new tables — aggregate `user_pets` / `scans` via RPC or views.
 
 Tiger mirror: [tiger/README.md](tiger/README.md).
@@ -286,13 +287,13 @@ Order work so the **demo never breaks**.
 
 | Priority | Work | Outcome |
 | --- | --- | --- |
-| **P0** | `supabase db push`, deploy `scan` + `player`, phone E2E on skeleton | Judges can scan QR and see a pet |
+| **P0** | `supabase db push`, deploy `scan` + `player` + `social`, phone E2E on skeleton | Judges can scan QR and see a pet |
 | **P0** | Demo poster QRs + `is_demo` account | Smooth booth loop |
 | **P1** | Expand `catalog.ts` + `roll.ts` + `roll.test.ts` (per-line table, variants) | Backend matches target odds |
 | **P1** | ~~DB `pet_id` migration~~ (see `20251121220000_pet_id.sql`) + redeploy functions | Collection keyed by `pet_id` |
 | **P2** | Collection UI for 65 slots (filters, counts) | App matches target design |
 | **P2** | Pity counters in DB + roll integration | Fairer legendary pacing |
-| **P2** | **Following** — `follows` migration + `social` Edge Function (UI already built on preview data) | Social demo for judges |
+| **P2** | ~~**Following** — `follows` migration + `social` Edge Function~~ (built; test on device) | Social demo for judges |
 | **P2** | **Leaderboards** — RPC + UI (Collectors / Gold / Scans) | Arcade hook in pitch |
 | **P3** | Tiger scan replication + one chart | MLH Tiger story |
 | **P4** | Collection UI polish, full roster, pity | After social MVP works |
@@ -305,7 +306,7 @@ If P1 slips, **ship the skeleton demo** and describe the full roster from this d
 
 Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, seasonal leaderboard resets.
 
-**In MVP scope (design only until built):** following (search, follow, view pets; UI built, backend pending), leaderboards (collectors / gold / scans). **Also in scope for product:** pity, 65-slot roster — may trail the skeleton demo.
+**In MVP scope (design only until built):** leaderboards (collectors / gold / scans). **Also in scope for product:** pity, 65-slot roster — may trail the skeleton demo.
 
 ---
 
