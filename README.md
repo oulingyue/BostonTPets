@@ -28,13 +28,6 @@ See [DESIGN.md](DESIGN.md) for the agreed game design.
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
 
-### Later (after the hackathon)
-- [ ] Real pet art (base sprite + tinted line-color layer)
-- [ ] Apple / Google sign-in (needed before an App Store launch)
-- [ ] Offline scan queue for underground stations
-- [ ] Leaderboard, friends / trading
-- [ ] Partner businesses near stations to host codes
-
 ## Stack
 
 - **App:** Expo SDK 58 + Expo Router + TypeScript (`src/`)
