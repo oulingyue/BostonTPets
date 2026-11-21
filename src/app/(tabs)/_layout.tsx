@@ -33,8 +33,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: 'Leaders',
-          headerTitle: 'Leaderboard',
+          title: 'Leaderboard',
           tabBarIcon: ({ focused }) => <TabIcon glyph="🏆" focused={focused} />,
         }}
       />

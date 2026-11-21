@@ -173,7 +173,7 @@ Camera + reticle; unmount when tab blurs.
 
 ### Profile
 
-Avatar, display name, @username, last active and joined date, Pets / Following / Followers counts, an **Add friends** button, stat tiles (points, collected, gold, scans), then a **Pets | History** toggle. Pets is a grid of owned pets; History is the scan history (own profile only). Leaderboards have their own tab. Sign out at the bottom.
+Avatar, display name, @username, last active and joined date, Pets / Following / Followers counts, an **Add friends** button, stat tiles (collected, gold, scans, points), then a **Pets | History** toggle. Pets is a grid of owned pets; History is the scan history (own profile only). Leaderboards have their own tab. Sign out at the bottom.
 
 - **Pet sheet:** tapping any pet opens a bottom sheet with its level (copies, capped at ★5, extras counted), first caught date and gold status. It never shows the station, because the same sheet is used on other people's profiles.
 - **Add friends:** search by display name (contains, case-insensitive, 3+ characters, up to 20 results; names that start with the query come first). Each result has a Follow button.
@@ -197,7 +197,7 @@ Avatar, display name, @username, last active and joined date, Pets / Following /
 
 **Goals:** arcade-style ranking for the pitch, and a reason to ride (and scan) every day.
 
-A **Leaders** tab (Collection | Scan | Leaders | Profile; Scan is a normal tab icon now that there are four) with a **Global | Friends** toggle. One board, ranked by **points**. Collectors / gold / scans stay as profile stats rather than separate boards.
+A **Leaderboard** tab (Collection | Scan | Leaderboard | Profile; Scan is a normal tab icon now that there are four) with a **Global | Friends** toggle. One board, ranked by **points**. Collectors / gold / scans stay as profile stats rather than separate boards.
 
 **Points** (`_shared/game/points.ts`), earned by every scan:
 

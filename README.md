@@ -13,7 +13,7 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] Game design agreed (species, T lines, odds, gold, levels, cooldowns, screens). See [DESIGN.md](DESIGN.md)
 - [x] Expo app scaffold (SDK 58, Expo Router, TypeScript)
 - [x] Email + password sign-up / sign-in, with protected routes
-- [x] Tabs: Collection, Scan, Leaders, Profile
+- [x] Tabs: Collection, Scan, Leaderboard, Profile
 - [x] Collection: "X / 35" summary and a temporary rarity-grouped list (layout still belongs to the collection teammate)
 - [x] Scan: QR camera, a client-side `btp:` code check, and cooldown / invalid-code / no-signal messages
 - [x] Fare-gate reveal animation (placeholder visuals)
