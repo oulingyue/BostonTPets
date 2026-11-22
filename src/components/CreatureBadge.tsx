@@ -39,7 +39,12 @@ export function CreatureBadge({ petId, owned, width, onPress }: Props) {
       <Text style={[styles.name, !isOwned && { color: colors.muted }]} numberOfLines={2}>
         {isOwned ? pet.name : '???'}
       </Text>
-      <Text style={[styles.rarity, { color: isOwned ? rarityStyle[pet.rarity].fg : colors.muted }]}>{rarityLabel}</Text>
+      {pet.rarity === 'legendary' ? (
+        // Gold text dark enough to read looks brown, so legendaries get a gold pill instead (dimmed until found).
+        <Text style={[styles.rarity, styles.legendaryPill, !isOwned && { opacity: 0.55 }]}>{rarityLabel}</Text>
+      ) : (
+        <Text style={[styles.rarity, { color: isOwned ? rarityStyle[pet.rarity].fg : colors.muted }]}>{rarityLabel}</Text>
+      )}
     </Pressable>
   );
 }
@@ -49,4 +54,12 @@ const styles = StyleSheet.create({
   art: { marginBottom: 6 },
   name: { fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center', minHeight: 28 },
   rarity: { fontSize: 10, fontWeight: '700', marginTop: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
+  legendaryPill: {
+    backgroundColor: rarityStyle.legendary.bg,
+    color: rarityStyle.legendary.fg,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
 });

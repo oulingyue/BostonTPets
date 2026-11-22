@@ -12,8 +12,17 @@ import { colors, rarityStyle, spacing } from '@/theme';
 /**
  * Bottom sheet with one pet's details. The same sheet is used for your pets and other people's,
  * so it never shows the station (that would reveal where someone rides).
+ * `showBlurb` adds the pet's description; the collection passes it for the player's own pets.
  */
-export function PetSheet({ pet, onClose }: { pet: PublicPet | null; onClose: () => void }) {
+export function PetSheet({
+  pet,
+  onClose,
+  showBlurb = false,
+}: {
+  pet: PublicPet | null;
+  onClose: () => void;
+  showBlurb?: boolean;
+}) {
   const insets = useSafeAreaInsets();
 
   // A chirp each time the sheet opens on a pet.
@@ -26,13 +35,23 @@ export function PetSheet({ pet, onClose }: { pet: PublicPet | null; onClose: () 
     <Modal visible={pet !== null} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close pet details" />
-        {pet && <SheetBody pet={pet} onClose={onClose} bottomInset={insets.bottom} />}
+        {pet && <SheetBody pet={pet} onClose={onClose} bottomInset={insets.bottom} showBlurb={showBlurb} />}
       </View>
     </Modal>
   );
 }
 
-function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () => void; bottomInset: number }) {
+function SheetBody({
+  pet,
+  onClose,
+  bottomInset,
+  showBlurb,
+}: {
+  pet: PublicPet;
+  onClose: () => void;
+  bottomInset: number;
+  showBlurb: boolean;
+}) {
   const info = getPet(pet.pet_id);
   if (!info) return null;
   const { line } = info;
@@ -59,6 +78,7 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
           )}
           {pet.is_gold && <Text style={[styles.chip, styles.goldChip]}>★ Gold</Text>}
         </View>
+        {showBlurb && <Text style={styles.blurb}>{info.blurb}</Text>}
       </View>
 
       <View style={styles.levelCard}>
@@ -114,6 +134,7 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.locked },
   hero: { alignItems: 'center', gap: 10 },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  blurb: { fontSize: 15, lineHeight: 21, color: colors.text, textAlign: 'center', paddingHorizontal: spacing.sm },
   chips: { flexDirection: 'row', gap: spacing.sm },
   goldChip: { backgroundColor: GOLD_COLOR, color: '#3a2a00' },
   chip: {

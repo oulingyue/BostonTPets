@@ -1003,6 +1003,13 @@ const pixelOf = (cells, scale) => (x, y) => {
   const cell = cells[Math.floor(y / scale)][Math.floor(x / scale)];
   return cell ? [...rgb(cell.color), 255] : [0, 0, 0, 0];
 };
+/**
+ * The pet's shape in translucent black, for pets the player hasn't found. It's a separate file rather than a
+ * tintColor because iOS can leave a recycled Image tinted after the tint is removed, darkening found pets.
+ */
+const SILHOUETTE = [0, 0, 0, 71]; // black at 28%
+const silhouetteOf = (cells, scale) => (x, y) =>
+  cells[Math.floor(y / scale)][Math.floor(x / scale)] ? SILHOUETTE : [0, 0, 0, 0];
 
 // ---------- main ----------
 const sheetArg = process.argv.indexOf('--sheet');
@@ -1014,15 +1021,19 @@ for (const [id, draw] of Object.entries(PETS)) {
     const file = path.join(OUT_DIR, `${id}${closed ? '-blink' : ''}.png`);
     writeFileSync(file, encodePng(N * SCALE, N * SCALE, pixelOf(cells, SCALE)));
     frames.push(cells);
+    if (!closed) writeFileSync(path.join(OUT_DIR, `${id}-silhouette.png`), encodePng(N * SCALE, N * SCALE, silhouetteOf(cells, SCALE)));
   }
-  console.log(`${id}.png + ${id}-blink.png`);
+  console.log(`${id}.png + ${id}-blink.png + ${id}-silhouette.png`);
 }
 
 // The app's map of generated art (src/lib/petArt.ts merges it with any hand-made art).
 const ART_MAP = path.resolve(OUT_DIR, '..', '..', 'src', 'lib', 'pixelPetArt.ts');
 const entries = Object.keys(PETS)
   .sort()
-  .map((id) => `  ${id}: { base: require('../../assets/pets/${id}.png'), blink: require('../../assets/pets/${id}-blink.png') },`);
+  .map(
+    (id) =>
+      `  ${id}: { base: require('../../assets/pets/${id}.png'), blink: require('../../assets/pets/${id}-blink.png'), silhouette: require('../../assets/pets/${id}-silhouette.png') },`,
+  );
 writeFileSync(
   ART_MAP,
   [

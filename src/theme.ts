@@ -16,5 +16,5 @@ export const rarityStyle = {
   common: { bg: '#ECEAE4', fg: '#4F4F4F' },
   rare: { bg: '#E6EEFA', fg: '#003DA5' },
   epic: { bg: '#F0E8FA', fg: '#6B2FA3' },
-  legendary: { bg: '#FBEFD6', fg: '#8A5A00' },
+  legendary: { bg: '#F2C230', fg: '#3D2B00' }, // bright gold pill, dark text
 } as const;

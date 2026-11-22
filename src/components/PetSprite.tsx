@@ -9,22 +9,18 @@ type Props = {
   size: number;
   /** Show the eyes-closed frame, when the art has one. */
   blinking?: boolean;
-  /** A dark silhouette, for creatures the player hasn't found yet. */
+  /** A dark silhouette (or "?" without silhouette art), for creatures the player hasn't found yet. */
   silhouette?: boolean;
 };
 
 /** A creature's art, or its emoji until the art exists. */
 export function PetSprite({ id, emoji, size, blinking = false, silhouette = false }: Props) {
   const art = PET_ART[id];
-  const source = art && (blinking && art.blink ? art.blink : art.base);
+  // No tintColor here on purpose: iOS reuses Image views, and a reused view can turn a found pet into a
+  // tinted silhouette. Silhouettes are their own PNGs instead.
+  const source = art && (silhouette ? art.silhouette : blinking && art.blink ? art.blink : art.base);
   if (source) {
-    return (
-      <Image
-        source={source}
-        resizeMode="contain"
-        style={{ width: size, height: size, tintColor: silhouette ? 'rgba(0,0,0,0.28)' : undefined }}
-      />
-    );
+    return <Image source={source} resizeMode="contain" style={{ width: size, height: size }} />;
   }
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
