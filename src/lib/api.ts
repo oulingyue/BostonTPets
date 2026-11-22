@@ -1,5 +1,5 @@
 import type { ScanResponse } from '@game/api';
-import { IS_PREVIEW, previewData, previewSocial } from './preview';
+import { IS_PREVIEW, previewData, previewLeaderboard, previewSocial } from './preview';
 import { supabase } from './supabase';
 
 /** One row of user_pets: the caller owns `copies` copies of the catalog pet `pet_id`. */
@@ -29,7 +29,12 @@ export type Profile = {
   /** Updated by the backend when the user opens the app or scans. */
   last_active_at: string | null;
 };
-export type Stats = { total_scans: number; lines_visited: number };
+export type Stats = {
+  total_scans: number;
+  lines_visited: number;
+  /** Leaderboard points: the sum of scans.points. A backend deployed before points existed omits it. */
+  points?: number;
+};
 
 async function invokePlayer<T>(body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke<T>('player', { body });
@@ -60,6 +65,30 @@ export async function fetchProfile(): Promise<Profile | null> {
 export async function fetchStats(): Promise<Stats> {
   if (IS_PREVIEW) return previewData.stats();
   return invokePlayer<Stats>({ resource: 'stats' });
+}
+
+export type LeaderboardScope = 'global' | 'friends';
+
+export type LeaderboardEntry = {
+  rank: number;
+  user_id: string;
+  handle: string;
+  display_name: string | null;
+  points: number;
+  pet_count: number;
+  is_me: boolean;
+};
+
+/**
+ * `entries` is the top 50. `me` is the caller's own row, whether or not it's in `entries`; null when
+ * the caller isn't on that board (no points yet on Global, or a demo account).
+ * Rules: DESIGN.md "Leaderboards" and the leaderboard SQL function.
+ */
+export type Leaderboard = { entries: LeaderboardEntry[]; me: LeaderboardEntry | null };
+
+export async function fetchLeaderboard(scope: LeaderboardScope): Promise<Leaderboard> {
+  if (IS_PREVIEW) return previewLeaderboard(scope);
+  return invokePlayer<Leaderboard>({ resource: 'leaderboard', scope });
 }
 
 /** Sends the raw QR payload to the server, which validates it and rolls the pet. */

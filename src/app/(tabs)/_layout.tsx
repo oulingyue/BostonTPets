@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router/js-tabs';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from 'react-native';
 import { colors } from '@/theme';
 
 function TabIcon({ glyph, focused }: { glyph: string; focused: boolean }) {
@@ -27,11 +27,14 @@ export default function TabLayout() {
         options={{
           title: 'Scan',
           headerShown: false,
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.scanButton, { backgroundColor: focused ? colors.primary : colors.text }]}>
-              <Text style={{ fontSize: 26 }}>📷</Text>
-            </View>
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon glyph="📷" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Leaderboard',
+          tabBarIcon: ({ focused }) => <TabIcon glyph="🏆" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -44,22 +47,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const SCAN_BUTTON_SIZE = 56;
-
-const styles = StyleSheet.create({
-  // Raised center button. The tab bar gives each icon a small slot (about 28px tall) right above
-  // its label, so the button is pinned to the slot's bottom edge and grows upward, keeping the
-  // "Scan" label visible whatever the slot height is on each platform.
-  scanButton: {
-    position: 'absolute',
-    bottom: 2,
-    left: '50%',
-    marginLeft: -SCAN_BUTTON_SIZE / 2,
-    width: SCAN_BUTTON_SIZE,
-    height: SCAN_BUTTON_SIZE,
-    borderRadius: SCAN_BUTTON_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

@@ -13,7 +13,7 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] Game design agreed (species, T lines, odds, gold, levels, cooldowns, screens). See [DESIGN.md](DESIGN.md)
 - [x] Expo app scaffold (SDK 58, Expo Router, TypeScript)
 - [x] Email + password sign-up / sign-in, with protected routes
-- [x] Tabs: Collection, Scan (center button), Profile
+- [x] Tabs: Collection, Scan, Leaderboard, Profile
 - [x] Collection: "X / 35" summary and a temporary rarity-grouped list (layout still belongs to the collection teammate)
 - [x] Scan: QR camera, a client-side `btp:` code check, and cooldown / invalid-code / no-signal messages
 - [x] Fare-gate reveal animation (placeholder visuals)
@@ -22,12 +22,12 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] Placeholder pet art: emoji on a circle in the line color
 - [x] `scan` Edge Function: validates the code, rolls server-side, records via the `record_scan` RPC
 - [x] Full-roster catalog, per-line roll, and hard pity (`roll_pity`), with tests in `npm run test:game`
+- [x] Leaderboards: points per scan (rarity, new vs duplicate, gold, daily bonus), Global and Friends boards, points on the reveal and profile ([DESIGN.md](DESIGN.md#leaderboards-mvp))
 
 ### Next
-- [ ] Push Supabase migrations (including `roll_pity` and `follows`), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone. Wipe `user_pets` / `scans` if they still hold skeleton ids like `red_lobster`.
+- [ ] Push Supabase migrations (including `roll_pity`, `follows` and `leaderboard`), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone. Wipe `user_pets` / `scans` if they still hold skeleton ids like `red_lobster`.
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
-- [ ] **MVP — Leaderboards:** collectors / gold / scans ([DESIGN.md](DESIGN.md#leaderboards-mvp))
 - [ ] Refine Collection page
 - [ ] (Optional) Tiger hypertable + demo codes for analytics — [tiger/README.md](tiger/README.md)
 
@@ -42,7 +42,7 @@ Level = copies, capped at ★5. Extra copies are counted (e.g. ★★★★★ +
 
 - **App:** Expo SDK 58 + Expo Router + TypeScript (`src/`)
 - **Backend:** Supabase Auth + Edge Functions (`scan`, `player`, `social`)
-- **Game database (runtime):** Supabase Postgres — `profiles`, `scan_codes`, `user_pets`, `scans`, RPCs `record_scan` / `my_stats`, `follows` ([supabase/migrations/](supabase/migrations/))
+- **Game database (runtime):** Supabase Postgres — `profiles`, `scan_codes`, `user_pets`, `scans`, RPCs `record_scan` / `my_stats` / `leaderboard`, `follows` ([supabase/migrations/](supabase/migrations/))
 - **Tiger Data (optional):** time-series copy of `scans` for dashboards and the hackathon prize — not used by the app ([tiger/](tiger/))
 - **Shared game logic:** `supabase/functions/_shared/game/` (catalog, odds, roll). The app imports it as `@game/*`.
 
@@ -111,6 +111,8 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push --remote                     # profiles + game + pet_id migration on Supabase
 npx supabase functions deploy scan player social
 ```
+
+Deploy the functions right after `db push`: the leaderboard migration changes `record_scan`'s parameters, so the old `scan` function and the new database (or the other way round) can't record scans.
 
 Tiger (hypertable / prize demo): [tiger/README.md](tiger/README.md) — analytics copy, not required for the app to run.
 

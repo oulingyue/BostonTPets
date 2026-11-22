@@ -31,6 +31,8 @@ export function ProfileHeader(p: Props) {
     { label: 'Collected', value: String(p.pets.length) },
     { label: 'Gold pets', value: String(gold) },
     { label: 'Scans', value: String(p.stats.total_scans) },
+    // "—" until the backend with points is deployed (stats.points missing).
+    { label: 'Points', value: p.stats.points === undefined ? '—' : p.stats.points.toLocaleString('en-US') },
   ];
 
   return (

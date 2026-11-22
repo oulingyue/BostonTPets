@@ -75,6 +75,7 @@ export default function ScanScreen() {
           stationName={r.stationName}
           copies={r.copies}
           isNew={r.isNew}
+          points={r.points}
           onDone={reset}
         />
       </SafeAreaView>

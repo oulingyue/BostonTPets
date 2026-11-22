@@ -3,9 +3,10 @@
 // Never enabled in a normal build: the flag is off unless that env var is set.
 import type { ScanResponse } from '@game/api';
 import { getPet, type Line } from '@game/catalog';
+import { bostonDay, POINTS_DUPLICATE, POINTS_NEW, scorePull } from '@game/points';
 import { rollPet, type PityState } from '@game/roll';
 import type { Session } from '@supabase/supabase-js';
-import type { FollowCounts, FollowKind, OwnedPet, Profile, PublicPet, PublicProfile, ScanHistoryItem, Stats, UserSummary } from './api';
+import type { FollowCounts, FollowKind, Leaderboard, LeaderboardEntry, LeaderboardScope, OwnedPet, Profile, PublicPet, PublicProfile, ScanHistoryItem, Stats, UserSummary } from './api';
 
 export const IS_PREVIEW = process.env.EXPO_PUBLIC_PREVIEW === '1';
 
@@ -90,6 +91,17 @@ const history: ScanHistoryItem[] = SEED.flatMap((seed) =>
 const visitedLines = new Set<Line>(SEED.map((seed) => seed.line));
 let pity: PityState = { sinceEpicPlus: 0, sinceLegendary: 0 };
 
+/** Points for the sample collection, roughly as record_scan would have scored it (no daily bonuses). */
+function pointsForPets(list: { pet_id: string; copies: number; is_gold: boolean }[]): number {
+  return list.reduce((sum, p) => {
+    const rarity = getPet(p.pet_id)?.rarity ?? 'common';
+    const m = p.is_gold ? 2 : 1;
+    return sum + (POINTS_NEW[rarity] + (p.copies - 1) * POINTS_DUPLICATE[rarity]) * m;
+  }, 0);
+}
+let myPoints = pointsForPets(pets);
+let lastScanDay: string | null = null;
+
 export const previewData = {
   async pets(): Promise<OwnedPet[]> {
     return pets.map((p) => ({ ...p }));
@@ -108,7 +120,7 @@ export const previewData = {
     };
   },
   async stats(): Promise<Stats> {
-    return { total_scans: history.length, lines_visited: visitedLines.size };
+    return { total_scans: history.length, lines_visited: visitedLines.size, points: myPoints };
   },
   /** Rolls locally with the real odds, then updates the in-memory collection like record_scan would. */
   async scan(): Promise<ScanResponse> {
@@ -140,6 +152,16 @@ export const previewData = {
     });
     visitedLines.add(station.line);
 
+    const today = bostonDay(new Date());
+    const points = scorePull({
+      rarity: getPet(roll.petId)?.rarity ?? 'common',
+      isGold: roll.isGold,
+      isNew,
+      firstOfDay: lastScanDay !== today,
+    });
+    lastScanDay = today;
+    myPoints += points.total;
+
     return {
       status: 'ok',
       stationName: station.name,
@@ -148,6 +170,7 @@ export const previewData = {
       copies: existing?.copies ?? 1,
       isNew,
       becameGold: roll.isGold && !wasGold,
+      points,
     };
   },
 };
@@ -246,7 +269,7 @@ export const previewSocial = {
       last_active_at: u.last_active_at,
       followers: followersOf(u.id).length,
       following: followingOf(u.id).length,
-      stats: { total_scans: u.total_scans, lines_visited: linesOf(u.pets) },
+      stats: { total_scans: u.total_scans, lines_visited: linesOf(u.pets), points: pointsForPets(u.pets) },
       pets: u.pets.map((p) => ({ ...p })),
     };
   },
@@ -272,3 +295,18 @@ export const previewSocial = {
   },
 };
 
+
+// --- leaderboard ------------------------------------------------------------------
+
+/** Same rules as the leaderboard SQL function, on the sample riders. */
+export async function previewLeaderboard(scope: LeaderboardScope): Promise<Leaderboard> {
+  await delay();
+  const people = [
+    { id: ME, handle: ME_HANDLE, display_name: 'Preview Rider', points: myPoints, pet_count: pets.length },
+    ...users.map((u) => ({ id: u.id, handle: u.handle, display_name: u.display_name, points: pointsForPets(u.pets), pet_count: u.pets.length })),
+  ].filter((p) => (scope === 'global' ? p.points > 0 : p.id === ME || isFollowing(ME, p.id)));
+  const ranked: LeaderboardEntry[] = people
+    .sort((a, b) => b.points - a.points)
+    .map((p, i) => ({ rank: i + 1, user_id: p.id, handle: p.handle, display_name: p.display_name, points: p.points, pet_count: p.pet_count, is_me: p.id === ME }));
+  return { entries: ranked.slice(0, 50), me: ranked.find((r) => r.is_me) ?? null };
+}
