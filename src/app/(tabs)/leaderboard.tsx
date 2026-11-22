@@ -162,7 +162,7 @@ const makeStyles = (c: Palette) =>
     name: { fontFamily: fonts.heavy, fontSize: 15, color: c.text },
     meta: { fontFamily: fonts.bold, fontSize: 12, color: c.muted },
     pointsBox: { alignItems: 'flex-end' },
-    points: { fontFamily: fonts.pixelBold, fontSize: 15, color: c.scheme === 'dark' ? c.accent : c.text },
+    points: { fontFamily: fonts.heavy, fontSize: 17, fontVariant: ['tabular-nums'], color: c.scheme === 'dark' ? c.accent : c.text },
     pointsLabel: { fontFamily: fonts.bold, fontSize: 11, color: c.muted },
     pinned: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md, backgroundColor: c.background },
     pinnedHint: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, fontSize: 13, paddingVertical: spacing.xs },
