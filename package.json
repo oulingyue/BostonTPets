@@ -46,7 +46,8 @@
     "preview": "cross-env EXPO_PUBLIC_PREVIEW=1 expo start",
     "lint": "expo lint",
     "sfx": "node scripts/sfx/generate.mjs",
-    "pets": "node scripts/pixel-pets/generate.mjs"
+    "pets": "node scripts/pixel-pets/generate.mjs",
+    "tiger:pets": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tiger/generate-pets.mjs"
   },
   "private": true
 }

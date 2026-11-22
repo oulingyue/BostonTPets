@@ -7,7 +7,7 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 
 ## Progress
 
-**Status:** app wired to **Supabase** (auth, Postgres game data, `scan`, `player` and `social` Edge Functions). Push migrations, deploy functions, then test an end-to-end scan on a phone. Tiger Data is **optional** (analytics / MLH prize only).
+**Status:** app wired to **Supabase** (auth, Postgres game data, `scan`, `player` and `social` Edge Functions). Push migrations, deploy functions, then test an end-to-end scan on a phone. Tiger Data is **optional**: an analytics copy of every scan for the MLH prize ([tiger/README.md](tiger/README.md)).
 
 ### Done
 - [x] Game design agreed (species, T lines, odds, gold, levels, cooldowns, screens). See [DESIGN.md](DESIGN.md)
@@ -30,7 +30,7 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
 - [ ] Refine Collection page
-- [ ] (Optional) Tiger hypertable + demo codes for analytics — [tiger/README.md](tiger/README.md)
+- [ ] (Optional) Set up Tiger analytics: sync job, simulated week, Grafana dashboard — [tiger/README.md](tiger/README.md)
 
 ## Loot table
 
@@ -44,7 +44,7 @@ Level = EXP from duplicates plus passive EXP while equipped in habitat (up to �
 - **App:** Expo SDK 58 + Expo Router + TypeScript (`src/`)
 - **Backend:** Supabase Auth + Edge Functions (`scan`, `player`, `social`)
 - **Game database (runtime):** Supabase Postgres — `profiles`, `scan_codes`, `user_pets`, `scans`, RPCs `record_scan` / `my_stats` / `leaderboard`, `follows` ([supabase/migrations/](supabase/migrations/))
-- **Tiger Data (optional):** time-series copy of `scans` for dashboards and the hackathon prize — not used by the app ([tiger/](tiger/))
+- **Tiger Data (optional):** time-series copy of `scans` (hypertable, columnstore, continuous aggregates, drop-rate check) for a Grafana dashboard and the hackathon prize — not used by the app ([tiger/](tiger/))
 - **Shared game logic:** `supabase/functions/_shared/game/` (catalog, odds, roll). The app imports it as `@game/*`.
 
 ### Teammates: one backend story
@@ -54,9 +54,9 @@ Level = EXP from duplicates plus passive EXP while equipped in habitat (up to �
 | Schema + demo QR codes | `supabase/migrations/` (demo codes are in `20251121210000_game.sql`) |
 | Edge Functions | `supabase/functions/scan`, `supabase/functions/player`, `supabase/functions/social` |
 | App env | `.env.local` from [.env.example](.env.example) — **Supabase URL + publishable key only** (no Tiger URL in the app) |
-| Tiger | Same table shapes as Supabase + Timescale extras in `tiger/migrations/001_game.sql`; sync `record_scan` body if you change the RPC on Supabase |
+| Tiger | Analytics only: `tiger/migrations/` (schema + sync job that pulls `scans` from Supabase every minute). If you add a column to `scans` that Tiger needs, update `tiger/migrations/002_sync.sql`; after changing the catalog, run `npm run tiger:pets` |
 
-Edge Functions **cannot** connect to Tiger free-tier TLS (`CaUsedAsEndEntity`), so game writes stay on Supabase. See [tiger/README.md](tiger/README.md) to replicate `scans` into Tiger for charts.
+Edge Functions **cannot** connect to Tiger (its certificate is marked as a CA, so Deno fails with `CaUsedAsEndEntity`), so game writes stay on Supabase and Tiger pulls a copy. See [tiger/README.md](tiger/README.md).
 
 ## Run the app
 

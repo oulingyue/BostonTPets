@@ -324,7 +324,7 @@ Order work so the **demo never breaks**.
 | **P2** | Pity counters in DB + roll integration | In the repo (`roll_pity`). Needs `db push` + redeploy. |
 | **P2** | ~~**Following** — `follows` migration + `social` Edge Function~~ (built; test on device) | Social demo for judges |
 | **P2** | **Leaderboards** — RPC + UI (Collectors / Gold / Scans) | Arcade hook in pitch |
-| **P3** | Tiger scan replication + one chart | MLH Tiger story |
+| **P3** | Tiger scan replication + Grafana dashboard (traffic, rush hour, drop-rate check) | MLH Tiger story |
 | **P4** | Collection UI polish, full roster, pity | After social MVP works |
 
 The 35-pet catalog and pity are in the repo. Following + leaderboards stay **in MVP scope**. Collection filters and art can trail that.
