@@ -1,7 +1,7 @@
 import { router, useNavigation } from 'expo-router';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { Avatar } from '@/components/Avatar';
+import { UserAvatar } from '@/components/UserAvatar';
 import { PointsInfoSheet } from '@/components/PointsInfoSheet';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { fetchLeaderboard, type LeaderboardEntry, type LeaderboardScope } from '@/lib/api';
@@ -108,7 +108,13 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
       accessibilityLabel={`Rank ${entry.rank}, ${name}${entry.is_me ? ' (you)' : ''}, ${entry.points} points. Open profile`}
     >
       <Text style={[styles.rank, entry.rank <= 3 && styles.medal]}>{MEDALS[entry.rank - 1] ?? entry.rank}</Text>
-      <Avatar name={name} seed={entry.handle} size={36} />
+      <UserAvatar
+        name={name}
+        seed={entry.handle}
+        size={36}
+        avatarPetId={entry.avatar_pet_id}
+        avatarIsGold={entry.avatar_is_gold}
+      />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.name} numberOfLines={1}>
           {name}

@@ -18,6 +18,8 @@ type LeaderboardRow = {
   points: number | string;
   pet_count: number | string;
   is_me: boolean;
+  avatar_pet_id: string | null;
+  avatar_is_gold: boolean;
 };
 
 export default {
@@ -33,9 +35,11 @@ export default {
     try {
       switch (body.resource) {
         case 'pets': {
+          const { error: syncError } = await admin.rpc('sync_passive_exp_for', { p_user_id: userId });
+          if (syncError) throw syncError;
           const { data, error } = await admin
             .from('user_pets')
-            .select('pet_id, copies, is_gold, first_caught_at, first_station')
+            .select('pet_id, copies, is_gold, first_caught_at, first_station, bonus_exp')
             .eq('user_id', userId);
           if (error) throw error;
           return Response.json(data);
@@ -73,6 +77,8 @@ export default {
             rank: Number(r.rank),
             points: Number(r.points),
             pet_count: Number(r.pet_count),
+            avatar_pet_id: r.avatar_pet_id ?? null,
+            avatar_is_gold: Boolean(r.avatar_is_gold),
           }));
           return Response.json({
             entries: rows.filter((r) => r.rank <= LEADERBOARD_SIZE),

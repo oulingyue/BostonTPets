@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Avatar } from '@/components/Avatar';
+import { UserAvatar } from '@/components/UserAvatar';
 import { FollowButton } from '@/components/FollowButton';
 import type { UserSummary } from '@/lib/api';
 import { useSession } from '@/lib/session';
@@ -20,7 +20,12 @@ export function UserRow({ user }: { user: UserSummary }) {
         accessibilityRole="button"
         accessibilityLabel={`${name}, @${user.handle}. Open profile`}
       >
-        <Avatar name={name} seed={user.handle} />
+        <UserAvatar
+          name={name}
+          seed={user.handle}
+          avatarPetId={user.avatar_pet_id}
+          avatarIsGold={user.avatar_is_gold}
+        />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.name} numberOfLines={1}>
             {name}

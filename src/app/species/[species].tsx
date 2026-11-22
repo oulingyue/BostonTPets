@@ -54,8 +54,8 @@ export default function SpeciesDetail() {
           </Text>
           {owned ? (
             <>
-              <Stars copies={owned.copies} level={levelFor(owned.copies, info.rarity).level} />
-              <ExpBarFor copies={owned.copies} rarity={info.rarity} />
+              <Stars copies={owned.copies} level={levelFor(owned.copies, info.rarity, owned.bonus_exp).level} />
+              <ExpBarFor copies={owned.copies} rarity={info.rarity} bonusExp={owned.bonus_exp} />
               <Text style={styles.meta}>
                 First caught{owned.first_station ? ` at ${owned.first_station}` : ''} ·{' '}
                 {new Date(owned.first_caught_at).toLocaleDateString()}
@@ -71,8 +71,8 @@ export default function SpeciesDetail() {
 }
 
 /** EXP toward the next level, from the duplicate count (rules in _shared/game/leveling.ts). */
-function ExpBarFor({ copies, rarity }: { copies: number; rarity: Rarity }) {
-  const lvl = levelFor(copies, rarity);
+function ExpBarFor({ copies, rarity, bonusExp }: { copies: number; rarity: Rarity; bonusExp: number }) {
+  const lvl = levelFor(copies, rarity, bonusExp);
   return (
     <View style={styles.exp}>
       <ExpBar

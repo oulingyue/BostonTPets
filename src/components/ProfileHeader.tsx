@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Avatar } from '@/components/Avatar';
+import { UserAvatar } from '@/components/UserAvatar';
 import type { PublicPet, Stats } from '@/lib/api';
 import { formatDate, isActiveNow, lastActiveLabel } from '@/lib/time';
 import { colors, spacing } from '@/theme';
@@ -21,6 +21,10 @@ type Props = {
   action?: ReactNode;
   /** Shown under the name, e.g. a demo-account badge. */
   badge?: ReactNode;
+  avatarPetId?: string | null;
+  avatarIsGold?: boolean;
+  /** Own profile only: opens pet picker when the avatar is tapped. */
+  onPressAvatar?: () => void;
 };
 
 /** Top of a profile, shared by your own profile and other people's. */
@@ -38,7 +42,31 @@ export function ProfileHeader(p: Props) {
   return (
     <View style={{ gap: spacing.md }}>
       <View style={styles.identity}>
-        <Avatar name={name} seed={p.handle ?? name} size={84} />
+        {p.onPressAvatar ? (
+          <Pressable
+            onPress={p.onPressAvatar}
+            accessibilityRole="button"
+            accessibilityLabel="Change profile picture"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            <UserAvatar
+              name={name}
+              seed={p.handle ?? name}
+              size={84}
+              avatarPetId={p.avatarPetId}
+              avatarIsGold={p.avatarIsGold}
+            />
+            <Text style={styles.avatarHint}>Change photo</Text>
+          </Pressable>
+        ) : (
+          <UserAvatar
+            name={name}
+            seed={p.handle ?? name}
+            size={84}
+            avatarPetId={p.avatarPetId}
+            avatarIsGold={p.avatarIsGold}
+          />
+        )}
         <Text style={styles.name}>{name}</Text>
         <View style={styles.handleRow}>
           <Text style={styles.handle}>{p.handle ? `@${p.handle}` : 'No username yet'}</Text>
@@ -110,6 +138,7 @@ function Count({ value, label, divider, onPress }: { value: number; label: strin
 
 const styles = StyleSheet.create({
   identity: { alignItems: 'center', gap: 4, paddingTop: spacing.sm },
+  avatarHint: { fontSize: 12, fontWeight: '600', color: colors.primary, textAlign: 'center', marginTop: 6 },
   name: { marginTop: spacing.sm, fontSize: 24, fontWeight: '800', color: colors.text },
   handleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   handle: { fontSize: 15, fontWeight: '500', color: colors.muted },

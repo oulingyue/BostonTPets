@@ -9,6 +9,7 @@ type Props = {
   petId: string;
   /** The player's user_pets row for this pet, if they own it. */
   owned?: OwnedPet;
+  equipped?: boolean;
   width: number;
   onPress: () => void;
 };
@@ -20,7 +21,7 @@ const CIRCLE = 56;
  * Gold pets get PetBadge's gold ring, GOLD stamp, and shine.
  * Pets the player hasn't found show as a silhouette named "???".
  */
-export function CreatureBadge({ petId, owned, width, onPress }: Props) {
+export function CreatureBadge({ petId, owned, equipped, width, onPress }: Props) {
   const pet = getPet(petId);
   if (!pet) return null;
   const isOwned = !!owned;
@@ -35,6 +36,11 @@ export function CreatureBadge({ petId, owned, width, onPress }: Props) {
     >
       <View style={styles.art}>
         <PetBadge petId={petId} owned={isOwned} isGold={owned?.is_gold} size={CIRCLE} />
+        {equipped && (
+          <View style={styles.equippedDot} accessibilityLabel="Equipped">
+            <Text style={styles.equippedDotText}>●</Text>
+          </View>
+        )}
       </View>
       <Text style={[styles.name, !isOwned && { color: colors.muted }]} numberOfLines={2}>
         {isOwned ? pet.name : '???'}
@@ -51,7 +57,19 @@ export function CreatureBadge({ petId, owned, width, onPress }: Props) {
 
 const styles = StyleSheet.create({
   badge: { alignItems: 'center' },
-  art: { marginBottom: 6 },
+  art: { marginBottom: 6, position: 'relative' },
+  equippedDot: {
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equippedDotText: { color: '#fff', fontSize: 10, lineHeight: 12, fontWeight: '900' },
   name: { fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center', minHeight: 28 },
   rarity: { fontSize: 10, fontWeight: '700', marginTop: 1, textTransform: 'uppercase', letterSpacing: 0.5 },
   legendaryPill: {

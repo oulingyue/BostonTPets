@@ -13,10 +13,19 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         headerStyle: { backgroundColor: colors.background },
         sceneStyle: { backgroundColor: colors.background },
+        animation: 'none',
       }}
     >
       <Tabs.Screen
         name="index"
+        options={{
+          title: 'Habitat',
+          headerShown: false,
+          tabBarIcon: ({ focused }) => <TabIcon glyph="🏡" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="collection"
         options={{
           title: 'Collection',
           tabBarIcon: ({ focused }) => <TabIcon glyph="📖" focused={focused} />,

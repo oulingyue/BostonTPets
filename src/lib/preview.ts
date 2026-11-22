@@ -2,11 +2,12 @@
 // in-memory sample data, with no Supabase project. Scans are rolled locally with the catalog odds.
 // Never enabled in a normal build: the flag is off unless that env var is set.
 import type { ScanResponse } from '@game/api';
-import { getPet, type Line } from '@game/catalog';
+import { getPet, habitatOf, type Line } from '@game/catalog';
+import { passiveGainForElapsed } from '@game/leveling';
 import { bostonDay, POINTS_DUPLICATE, POINTS_NEW, scorePull } from '@game/points';
 import { rollPet, type PityState } from '@game/roll';
 import type { Session } from '@supabase/supabase-js';
-import type { FollowCounts, FollowKind, Leaderboard, LeaderboardEntry, LeaderboardScope, OwnedPet, Profile, PublicPet, PublicProfile, ScanHistoryItem, Stats, UserSummary } from './api';
+import type { FollowCounts, FollowKind, HabitatSlot, Leaderboard, LeaderboardEntry, LeaderboardScope, OwnedPet, Profile, PublicPet, PublicProfile, ScanHistoryItem, Stats, UserSummary } from './api';
 
 export const IS_PREVIEW = process.env.EXPO_PUBLIC_PREVIEW === '1';
 
@@ -75,6 +76,7 @@ const pets: OwnedPet[] = SEED.map((seed) => ({
   is_gold: seed.is_gold,
   first_caught_at: hoursAgo(seed.hours),
   first_station: seed.station,
+  bonus_exp: 0,
 }));
 
 let nextId = 1;
@@ -101,9 +103,28 @@ function pointsForPets(list: { pet_id: string; copies: number; is_gold: boolean 
 }
 let myPoints = pointsForPets(pets);
 let lastScanDay: string | null = null;
+let myAvatarPetId: string | null = null;
+
+/** Starts empty so the habitat plus buttons are visible. One pet per zone. */
+let habitat: HabitatSlot[] = [];
+const habitatTicks = new Map<string, number>();
+
+function syncPreviewPassive(): void {
+  const now = Date.now();
+  for (const slot of habitat) {
+    const pet = pets.find((p) => p.pet_id === slot.pet_id);
+    const info = getPet(slot.pet_id);
+    if (!pet || !info) continue;
+    const last = habitatTicks.get(slot.pet_id) ?? now;
+    const gain = passiveGainForElapsed(now - last, pet.copies, info.rarity, pet.bonus_exp);
+    if (gain > 0) pet.bonus_exp += gain;
+    habitatTicks.set(slot.pet_id, now);
+  }
+}
 
 export const previewData = {
   async pets(): Promise<OwnedPet[]> {
+    syncPreviewPassive();
     return pets.map((p) => ({ ...p }));
   },
   async history(): Promise<ScanHistoryItem[]> {
@@ -117,7 +138,12 @@ export const previewData = {
       is_demo: false,
       created_at: daysAgo(13),
       last_active_at: new Date().toISOString(),
+      avatar_pet_id: myAvatarPetId,
     };
+  },
+  setAvatar(petId: string | null): void {
+    if (petId !== null && !pets.some((p) => p.pet_id === petId)) return;
+    myAvatarPetId = petId;
   },
   async stats(): Promise<Stats> {
     return { total_scans: history.length, lines_visited: visitedLines.size, points: myPoints };
@@ -141,6 +167,7 @@ export const previewData = {
         is_gold: roll.isGold,
         first_caught_at: new Date().toISOString(),
         first_station: station.name,
+        bonus_exp: 0,
       });
     }
     history.unshift({
@@ -173,6 +200,25 @@ export const previewData = {
       points,
     };
   },
+  habitat(): HabitatSlot[] {
+    syncPreviewPassive();
+    return habitat.map((slot) => ({ ...slot }));
+  },
+  setHabitat(petId: string, place: boolean): void {
+    syncPreviewPassive();
+    const zone = habitatOf(petId);
+    if (!zone) return;
+    const prev = habitat.find((slot) => slot.zone === zone);
+    if (prev) habitatTicks.delete(prev.pet_id);
+    habitat = habitat.filter((slot) => slot.zone !== zone);
+    if (place && pets.some((pet) => pet.pet_id === petId)) {
+      habitat.push({ zone, pet_id: petId });
+      habitatTicks.set(petId, Date.now());
+    }
+  },
+  syncPassiveExp(): void {
+    syncPreviewPassive();
+  },
 };
 
 // --- sample riders and follows ---------------------------------------------------
@@ -185,6 +231,7 @@ type SampleUser = {
   last_active_at: string;
   total_scans: number;
   pets: PublicPet[];
+  avatar_pet_id?: string | null;
 };
 
 function samplePets(list: [petId: string, copies: number, isGold?: boolean][]): PublicPet[] {
@@ -202,7 +249,7 @@ function linesOf(list: PublicPet[]): number {
 }
 
 const users: SampleUser[] = [
-  { id: 'u-priya', handle: 'priya_on_the_t', display_name: 'Priya S.', created_at: daysAgo(22), last_active_at: hoursAgo(3), total_scans: 23,
+  { id: 'u-priya', handle: 'priya_on_the_t', display_name: 'Priya S.', created_at: daysAgo(22), last_active_at: hoursAgo(3), total_scans: 23, avatar_pet_id: 'monarch_butterfly',
     pets: samplePets([['mallard_duck', 5], ['pigeon', 4], ['haymarket_rat', 2], ['northeastern_husky', 1], ['swan', 3], ['herring_gull', 1], ['monarch_butterfly', 1]]) },
   { id: 'u-graham', handle: 'graham_rides', display_name: 'Graham R.', created_at: daysAgo(30), last_active_at: hoursAgo(0.02), total_scans: 61,
     pets: samplePets([['canada_goose', 6], ['bullfrog', 3], ['bu_terrier', 2], ['snapping_turtle', 1, true], ['alewife', 2], ['blue_jay', 1]]) },
@@ -230,9 +277,25 @@ const isFollowing = (follower: string, followee: string) =>
 const followersOf = (id: string) => follows.filter(([, b]) => b === id).map(([a]) => a);
 const followingOf = (id: string) => follows.filter(([a]) => a === id).map(([, b]) => b);
 
+function avatarForUser(u: { pets: PublicPet[]; avatar_pet_id?: string | null }): { avatar_pet_id: string | null; avatar_is_gold: boolean } {
+  const avatar_pet_id = u.avatar_pet_id ?? null;
+  const avatar_is_gold = avatar_pet_id ? (u.pets.find((p) => p.pet_id === avatar_pet_id)?.is_gold ?? false) : false;
+  return { avatar_pet_id, avatar_is_gold };
+}
+
 function summaryOf(id: string): UserSummary | null {
   if (id === ME) {
-    return { id: ME, handle: ME_HANDLE, display_name: 'Preview Rider', pet_count: pets.length, follows_you: false, followed_by_me: false };
+    const { avatar_pet_id, avatar_is_gold } = avatarForUser({ pets, avatar_pet_id: myAvatarPetId });
+    return {
+      id: ME,
+      handle: ME_HANDLE,
+      display_name: 'Preview Rider',
+      pet_count: pets.length,
+      follows_you: false,
+      followed_by_me: false,
+      avatar_pet_id,
+      avatar_is_gold,
+    };
   }
   const u = users.find((x) => x.id === id);
   if (!u) return null;
@@ -243,6 +306,7 @@ function summaryOf(id: string): UserSummary | null {
     pet_count: u.pets.length,
     follows_you: isFollowing(u.id, ME),
     followed_by_me: isFollowing(ME, u.id),
+    ...avatarForUser(u),
   };
 }
 
@@ -307,6 +371,19 @@ export async function previewLeaderboard(scope: LeaderboardScope): Promise<Leade
   ].filter((p) => (scope === 'global' ? p.points > 0 : p.id === ME || isFollowing(ME, p.id)));
   const ranked: LeaderboardEntry[] = people
     .sort((a, b) => b.points - a.points)
-    .map((p, i) => ({ rank: i + 1, user_id: p.id, handle: p.handle, display_name: p.display_name, points: p.points, pet_count: p.pet_count, is_me: p.id === ME }));
+    .map((p, i) => {
+      const user = p.id === ME ? { pets, avatar_pet_id: myAvatarPetId } : users.find((u) => u.id === p.id);
+      const avatar = user ? avatarForUser(user) : { avatar_pet_id: null, avatar_is_gold: false };
+      return {
+        rank: i + 1,
+        user_id: p.id,
+        handle: p.handle,
+        display_name: p.display_name,
+        points: p.points,
+        pet_count: p.pet_count,
+        is_me: p.id === ME,
+        ...avatar,
+      };
+    });
   return { entries: ranked.slice(0, 50), me: ranked.find((r) => r.is_me) ?? null };
 }

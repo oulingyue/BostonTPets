@@ -51,6 +51,8 @@ export default function UserProfile() {
           handle={profile.handle}
           createdAt={profile.created_at}
           lastActiveAt={profile.last_active_at}
+          avatarPetId={profile.avatar_pet_id}
+          avatarIsGold={profile.avatar_is_gold}
           followsYou={!isMe && profile.follows_you}
           pets={profile.pets}
           stats={profile.stats}

@@ -133,7 +133,7 @@ Clients never choose outcomes. `scan` calls `record_scan` after a successful rol
 ## Duplicates and levels
 
 - First time you roll a `pet_id`: **new** slot, `copies = 1`, store `first_station` / `first_caught_at`.
-- Same `pet_id` again: **duplicate** — `copies += 1`, and the duplicate gives EXP: common 25, rare 50, epic 100, legendary 175. Levels need 100 / 150 / 200 / 250 EXP, up to ★5 (700 EXP). Level and EXP are derived from `copies` (`_shared/game/leveling.ts`), so nothing new is stored. Cosmetic only.
+- Same `pet_id` again: **duplicate** — `copies += 1`, and the duplicate gives EXP: common 25, rare 50, epic 100, legendary 175. Levels need 100 / 150 / 200 / 250 EXP, up to ★5 (700 EXP). Level and EXP come from duplicate EXP plus optional **`bonus_exp`** on equipped pets (`_shared/game/leveling.ts`). Cosmetic only.
 - The pull reveal fills the EXP bar; each full bar plays a level-up (banner, rising arrows, a new star) and carries the rest into the next level.
 - Gold on a duplicate still upgrades that slot (`is_gold` sticks).
 
@@ -153,7 +153,21 @@ Never create a second collection row for the same `pet_id`.
 
 ## Screens
 
-Tabs: **Collection**, **Scan** (center), **Profile**. Social screens open from Profile; there is no separate Friends tab.
+Tabs: **Habitat**, **Collection**, **Scan**, **Profile**. The app opens on Habitat. Social screens open from Profile; there is no separate Friends tab.
+
+### Habitat
+
+The first screen is one pixel scene, not three cards. Sky, earth, and water meet at a tree and a shore. The picture uses flat pastel blocks and small diamond sparkles, in the same cute sticker-pixel style as the pet art. Pets are the existing sprites.
+
+Each band holds **one** pet the player owns:
+
+- **Sky:** flying birds and the monarch butterfly.
+- **Water:** swimmers, including ducks, geese, swans, the penguin, the seal, the turtle, and the frog.
+- **Earth:** walkers, including the wild turkey.
+
+A plus on an empty band opens that zone's pets. Picking a different pet replaces the one in the band. The plus stays after a pet is placed so the player can swap or clear it. Tapping the pet in the scene only plays the hop. Rows live in `habitat_pets` (`20261121210000_habitat.sql`); the zone of each `pet_id` is `HABITAT_OF` in `catalog.ts`.
+
+**Equip** is the same system: at most one pet in **air** (sky), **land** (earth), and **water**. Equip from the habitat home, the habitat picker, or a pet's sheet in Collection / Profile (`set_habitat_pet`). Equipped pets earn **passive EXP** stored on `user_pets.bonus_exp` (`20261122200000_passive_exp.sql`): **20 EXP/day** while equipped (~5 days for the first 100 EXP bar), synced when pets load or the app comes to the foreground. Offline accrual is capped at **7 days**. Passive EXP counts toward the same level bars as duplicate EXP (`leveling.ts`); it does not affect leaderboard points.
 
 **MVP includes** following (search, follow, view other people's profiles and pets) and leaderboards. Following is built (app + `social` Edge Function + `follows` table). Leaderboards are spec only.
 
@@ -188,6 +202,7 @@ Avatar, display name, @username, last active and joined date, Pets / Following /
 - **Profiles are public** to every signed-in user: display name, username, last active, joined date, follow counts, stats and pets. Email, scan history and stations are never shown to anyone else, since stations reveal where someone rides.
 - **Usernames** are unique, lowercase, 3–20 characters of `a–z`, `0–9` and `_` (`src/lib/handle.ts`). They are chosen at sign-up, with a live availability check.
 - **Last active** is set by the backend when the app opens or comes to the foreground (`touch_last_active`), not taken from Supabase's last sign-in, which goes stale because the app keeps you signed in.
+- **Profile picture:** optional `profiles.avatar_pet_id` (must be owned). Shown on profile, search, follows, and leaderboard; otherwise initials (`set_avatar_pet` RPC).
 
 **Not in MVP:** trading/gifting pets, blocking, DMs, activity feed.
 

@@ -1,31 +1,45 @@
-import { getPet, GOLD_COLOR, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
-import { useEffect } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { getPet, GOLD_COLOR, LINE_INFO, type Habitat } from '@game/catalog';
+import { levelFor } from '@game/leveling';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ExpBar } from '@/components/ExpBar';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
-import type { PublicPet } from '@/lib/api';
+import { equipPet, type OwnedPet, type PublicPet } from '@/lib/api';
 import { playSfx } from '@/lib/sfx';
 import { formatDate } from '@/lib/time';
 import { colors, rarityStyle, spacing } from '@/theme';
 
+const ZONE_LABEL: Record<Habitat, string> = { sky: 'Air', earth: 'Land', water: 'Water' };
+
+type SheetPet = PublicPet | OwnedPet;
+
+function bonusExpOf(pet: SheetPet): number {
+  return 'bonus_exp' in pet ? (pet.bonus_exp ?? 0) : 0;
+}
+
 /**
  * Bottom sheet with one pet's details. The same sheet is used for your pets and other people's,
  * so it never shows the station (that would reveal where someone rides).
- * `showBlurb` adds the pet's description; the collection passes it for the player's own pets.
  */
 export function PetSheet({
   pet,
   onClose,
   showBlurb = false,
+  showEquip = false,
+  equippedPetIds,
+  onEquipChange,
 }: {
-  pet: PublicPet | null;
+  pet: SheetPet | null;
   onClose: () => void;
   showBlurb?: boolean;
+  showEquip?: boolean;
+  equippedPetIds?: ReadonlySet<string>;
+  onEquipChange?: () => void | Promise<void>;
 }) {
   const insets = useSafeAreaInsets();
 
-  // A chirp each time the sheet opens on a pet.
   const openPetId = pet?.pet_id ?? null;
   useEffect(() => {
     if (openPetId) playSfx('open');
@@ -35,7 +49,17 @@ export function PetSheet({
     <Modal visible={pet !== null} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close pet details" />
-        {pet && <SheetBody pet={pet} onClose={onClose} bottomInset={insets.bottom} showBlurb={showBlurb} />}
+        {pet && (
+          <SheetBody
+            pet={pet}
+            onClose={onClose}
+            bottomInset={insets.bottom}
+            showBlurb={showBlurb}
+            showEquip={showEquip}
+            equipped={equippedPetIds?.has(pet.pet_id) ?? false}
+            onEquipChange={onEquipChange}
+          />
+        )}
       </View>
     </Modal>
   );
@@ -46,18 +70,41 @@ function SheetBody({
   onClose,
   bottomInset,
   showBlurb,
+  showEquip,
+  equipped,
+  onEquipChange,
 }: {
-  pet: PublicPet;
+  pet: SheetPet;
   onClose: () => void;
   bottomInset: number;
   showBlurb: boolean;
+  showEquip: boolean;
+  equipped: boolean;
+  onEquipChange?: () => void | Promise<void>;
 }) {
   const info = getPet(pet.pet_id);
+  const [busy, setBusy] = useState(false);
+  const [equipError, setEquipError] = useState<string | null>(null);
+
   if (!info) return null;
-  const { line } = info;
-  const level = levelFromCopies(pet.copies);
-  const extra = Math.max(0, pet.copies - MAX_LEVEL);
+  const { line, habitat } = info;
+  const bonusExp = bonusExpOf(pet);
+  const lvl = levelFor(pet.copies, info.rarity, bonusExp);
   const rarity = rarityStyle[info.rarity];
+
+  const toggleEquip = async () => {
+    if (busy) return;
+    setBusy(true);
+    setEquipError(null);
+    try {
+      await equipPet(pet.pet_id, !equipped);
+      await onEquipChange?.();
+    } catch (e) {
+      setEquipError(e instanceof Error ? e.message : 'Could not update equip.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <View style={[styles.sheet, { paddingBottom: Math.max(bottomInset, spacing.md) + spacing.md }]} accessibilityViewIsModal>
@@ -77,6 +124,7 @@ function SheetBody({
             </Text>
           )}
           {pet.is_gold && <Text style={[styles.chip, styles.goldChip]}>★ Gold</Text>}
+          {equipped && <Text style={[styles.chip, styles.equippedChip]}>Equipped</Text>}
         </View>
         {showBlurb && <Text style={styles.blurb}>{info.blurb}</Text>}
       </View>
@@ -84,21 +132,44 @@ function SheetBody({
       <View style={styles.levelCard}>
         <View style={styles.levelRow}>
           <Text style={styles.levelText}>
-            Level {level}
-            {level === MAX_LEVEL ? ' (max)' : ''}
+            Level {lvl.level}
+            {lvl.isMax ? ' (max)' : ''}
           </Text>
-          <Stars copies={pet.copies} size={18} />
+          <Stars copies={pet.copies} level={lvl.level} size={18} />
         </View>
-        <View style={styles.bar} accessible={false}>
-          <View style={[styles.barFill, { width: `${(level / MAX_LEVEL) * 100}%` }]} />
-        </View>
+        <ExpBar
+          level={lvl.level}
+          isMax={lvl.isMax}
+          fill={lvl.isMax ? 1 : lvl.exp / lvl.expToNext}
+          detail={`${lvl.exp} / ${lvl.expToNext} EXP`}
+        />
         <Text style={styles.levelHint}>
-          Pulled {pet.copies} {pet.copies === 1 ? 'time' : 'times'}.{' '}
-          {level < MAX_LEVEL
-            ? `Each new pull adds a level, up to ★${MAX_LEVEL}.`
-            : `Max level. Extra pulls are counted${extra > 0 ? ` (+${extra} so far)` : ''}.`}
+          {equipped
+            ? `Equipped in ${ZONE_LABEL[habitat]} — earning passive EXP while equipped.`
+            : 'Equip in habitat for passive EXP; duplicates from scans still add the most.'}
+          {' '}
+          Pulled {pet.copies} {pet.copies === 1 ? 'time' : 'times'}.
         </Text>
       </View>
+
+      {showEquip && (
+        <Pressable
+          style={({ pressed }) => [styles.equipBtn, { opacity: pressed || busy ? 0.85 : 1 }]}
+          onPress={toggleEquip}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityLabel={equipped ? 'Unequip pet' : `Equip in ${ZONE_LABEL[habitat]}`}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.equipBtnText}>
+              {equipped ? 'Unequip' : `Equip · ${ZONE_LABEL[habitat]}`}
+            </Text>
+          )}
+        </Pressable>
+      )}
+      {equipError && <Text style={styles.equipError}>{equipError}</Text>}
 
       <View style={styles.facts}>
         <Fact label="First caught" value={formatDate(pet.first_caught_at)} />
@@ -135,8 +206,9 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: 10 },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
   blurb: { fontSize: 15, lineHeight: 21, color: colors.text, textAlign: 'center', paddingHorizontal: spacing.sm },
-  chips: { flexDirection: 'row', gap: spacing.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm },
   goldChip: { backgroundColor: GOLD_COLOR, color: '#3a2a00' },
+  equippedChip: { backgroundColor: colors.primary, color: '#fff' },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -150,9 +222,16 @@ const styles = StyleSheet.create({
   levelCard: { backgroundColor: colors.background, borderRadius: 14, padding: 14, gap: 10 },
   levelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   levelText: { fontSize: 15, fontWeight: '700', color: colors.text },
-  bar: { height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' },
-  barFill: { height: 8, borderRadius: 4, backgroundColor: '#E8A100' },
   levelHint: { fontSize: 13, color: '#555555' },
+  equipBtn: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equipBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  equipError: { color: colors.danger, textAlign: 'center', fontSize: 13 },
   facts: { gap: 12 },
   fact: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
   factLabel: { fontSize: 14, color: colors.muted },

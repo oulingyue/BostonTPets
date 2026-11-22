@@ -23,9 +23,10 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 - [x] `scan` Edge Function: validates the code, rolls server-side, records via the `record_scan` RPC
 - [x] Full-roster catalog, per-line roll, and hard pity (`roll_pity`), with tests in `npm run test:game`
 - [x] Leaderboards: points per scan (rarity, new vs duplicate, gold, daily bonus), Global and Friends boards, points on the reveal and profile ([DESIGN.md](DESIGN.md#leaderboards-mvp))
+- [x] Habitat home: one owned pet in the sky, on the earth, and in the water
 
 ### Next
-- [ ] Push Supabase migrations (including `roll_pity`, `follows` and `leaderboard`), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone. Wipe `user_pets` / `scans` if they still hold skeleton ids like `red_lobster`.
+- [ ] Push Supabase migrations (including `roll_pity`, `follows`, `leaderboard`, `habitat_pets`, and `passive_exp`), deploy `scan`, `player` and `social`, and test a scan and a follow end-to-end on a phone. Wipe `user_pets` / `scans` if they still hold skeleton ids like `red_lobster`. Habitat + passive equip: `20261121210000_habitat.sql`, `20261122200000_passive_exp.sql`.
 - [ ] Print the demo poster: one QR code per station
 - [ ] Mark the demo account (`profiles.is_demo = true`) for the live demo
 - [ ] Refine Collection page
@@ -36,7 +37,7 @@ See [DESIGN.md](DESIGN.md) for game design, loot tables, and the hackathon imple
 Implemented in `supabase/functions/_shared/game/catalog.ts` and `roll.ts`. Odds, pity reset, and the `getPet` / `CATALOG` / `TOTAL_PETS` contract: [DESIGN.md — Target design](DESIGN.md#target-design-full-roster).
 
 ## Duplicates and levels
-Level = copies, capped at ★5. Extra copies are counted (e.g. ★★★★★ +3). Levels are cosmetic only.
+Level = EXP from duplicates plus passive EXP while equipped in habitat (up to ★5). Extra copies are counted (e.g. ★★★★★ +3). Levels are cosmetic only.
 
 ## Stack
 

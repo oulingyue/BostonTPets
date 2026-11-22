@@ -40,6 +40,7 @@ function RootNavigator() {
     >
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="habitat/[zone]" options={{ presentation: 'modal', title: 'Equip a pet' }} />
         <Stack.Screen name="species/[species]" options={{ title: '' }} />
         <Stack.Screen name="friends/search" options={{ title: 'Add friends' }} />
         <Stack.Screen name="user/[handle]/index" options={{ title: '' }} />

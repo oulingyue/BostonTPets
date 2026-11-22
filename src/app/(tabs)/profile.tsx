@@ -2,6 +2,7 @@ import { getPet, GOLD_COLOR } from '@game/catalog';
 import { Link, router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AvatarPickerModal } from '@/components/AvatarPickerModal';
 import { PetBadge } from '@/components/PetBadge';
 import { PetGrid } from '@/components/PetGrid';
 import { PetSheet } from '@/components/PetSheet';
@@ -9,10 +10,12 @@ import { ProfileHeader } from '@/components/ProfileHeader';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import {
   fetchMyFollowCounts,
+  fetchHabitat,
   fetchMyPets,
   fetchProfile,
   fetchScanHistory,
   fetchStats,
+  setAvatarPet,
   type OwnedPet,
 } from '@/lib/api';
 import { signOut, useSession } from '@/lib/session';
@@ -25,23 +28,28 @@ export default function ProfileScreen() {
   const { session } = useSession();
   const [tab, setTab] = useState<Tab>('pets');
   const [openPet, setOpenPet] = useState<OwnedPet | null>(null);
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const load = useCallback(async () => {
-    const [profile, stats, pets, history, counts] = await Promise.all([
+    const [profile, stats, pets, habitat, history, counts] = await Promise.all([
       fetchProfile(),
       fetchStats(),
       fetchMyPets(),
+      fetchHabitat(),
       fetchScanHistory(),
       // The social backend may not be deployed yet; the rest of the profile should still load.
       fetchMyFollowCounts().catch(() => ({ following: 0, followers: 0 })),
     ]);
-    return { profile, stats, pets, history, counts };
+    return { profile, stats, pets, habitat, history, counts };
   }, []);
   const { data, error, loading, refresh } = useFocusedData(load);
 
   if (!data && loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   const handle = data?.profile?.handle ?? null;
+  const equippedIds = new Set((data?.habitat ?? []).map((slot) => slot.pet_id));
+  const avatarPetId = data?.profile?.avatar_pet_id ?? null;
+  const avatarIsGold = (data?.pets ?? []).find((p) => p.pet_id === avatarPetId)?.is_gold ?? false;
 
   return (
     <>
@@ -62,6 +70,9 @@ export default function ProfileScreen() {
             following={data.counts.following}
             followers={data.counts.followers}
             badge={data.profile?.is_demo ? <Text style={styles.demo}>DEMO ACCOUNT</Text> : undefined}
+            avatarPetId={avatarPetId}
+            avatarIsGold={avatarIsGold}
+            onPressAvatar={() => setAvatarOpen(true)}
             onPressFollows={
               handle
                 ? (t) => router.push({ pathname: '/user/[handle]/follows', params: { handle, tab: t } })
@@ -127,7 +138,27 @@ export default function ProfileScreen() {
         </Link>
       </ScrollView>
 
-      <PetSheet pet={openPet} onClose={() => setOpenPet(null)} />
+      <PetSheet
+        pet={openPet}
+        onClose={() => setOpenPet(null)}
+        showEquip
+        equippedPetIds={equippedIds}
+        onEquipChange={refresh}
+      />
+      <AvatarPickerModal
+        visible={avatarOpen}
+        pets={data?.pets ?? []}
+        currentPetId={avatarPetId}
+        onClose={() => setAvatarOpen(false)}
+        onSelect={async (petId) => {
+          try {
+            await setAvatarPet(petId);
+            await refresh();
+          } catch (e) {
+            Alert.alert('Could not update photo', e instanceof Error ? e.message : String(e));
+          }
+        }}
+      />
     </>
   );
 }

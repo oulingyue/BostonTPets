@@ -9,6 +9,8 @@ export type OwnedPet = {
   is_gold: boolean;
   first_caught_at: string;
   first_station: string | null;
+  /** EXP from equipping in habitat; synced on the server. */
+  bonus_exp: number;
 };
 
 export type ScanHistoryItem = {
@@ -28,6 +30,7 @@ export type Profile = {
   created_at: string;
   /** Updated by the backend when the user opens the app or scans. */
   last_active_at: string | null;
+  avatar_pet_id: string | null;
 };
 export type Stats = {
   total_scans: number;
@@ -44,7 +47,8 @@ async function invokePlayer<T>(body: Record<string, unknown>): Promise<T> {
 
 export async function fetchMyPets(): Promise<OwnedPet[]> {
   if (IS_PREVIEW) return previewData.pets();
-  return invokePlayer<OwnedPet[]>({ resource: 'pets' });
+  const rows = await invokePlayer<OwnedPet[]>({ resource: 'pets' });
+  return rows.map((p) => ({ ...p, bonus_exp: p.bonus_exp ?? 0 }));
 }
 
 export async function fetchScanHistory(limit = 50): Promise<ScanHistoryItem[]> {
@@ -56,10 +60,22 @@ export async function fetchProfile(): Promise<Profile | null> {
   if (IS_PREVIEW) return previewData.profile();
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, is_demo, created_at, last_active_at')
+    .select('id, display_name, handle, is_demo, created_at, last_active_at, avatar_pet_id')
     .maybeSingle();
   if (error) throw error;
-  return data as Profile | null;
+  const row = data as Profile | null;
+  if (row) row.avatar_pet_id = row.avatar_pet_id ?? null;
+  return row;
+}
+
+/** Set profile picture to an owned pet, or `null` for initials. */
+export async function setAvatarPet(petId: string | null): Promise<void> {
+  if (IS_PREVIEW) {
+    previewData.setAvatar(petId);
+    return;
+  }
+  const { error } = await supabase.rpc('set_avatar_pet', { p_pet_id: petId });
+  if (error) throw error;
 }
 
 export async function fetchStats(): Promise<Stats> {
@@ -77,6 +93,8 @@ export type LeaderboardEntry = {
   points: number;
   pet_count: number;
   is_me: boolean;
+  avatar_pet_id: string | null;
+  avatar_is_gold: boolean;
 };
 
 /**
@@ -117,8 +135,8 @@ export async function submitScan(payload: string): Promise<ScanResponse> {
 //
 // Privacy rule: other people's data never includes email, scan history or stations.
 
-/** A pet as other people see it: no station. */
-export type PublicPet = Omit<OwnedPet, 'first_station'>;
+/** A pet as other people see it: no station or passive EXP. */
+export type PublicPet = Omit<OwnedPet, 'first_station' | 'bonus_exp'>;
 
 export type UserSummary = {
   id: string;
@@ -129,6 +147,8 @@ export type UserSummary = {
   follows_you: boolean;
   /** The caller follows them. */
   followed_by_me: boolean;
+  avatar_pet_id: string | null;
+  avatar_is_gold: boolean;
 };
 
 export type FollowCounts = { following: number; followers: number };
@@ -182,9 +202,40 @@ export async function isHandleAvailable(handle: string): Promise<boolean> {
 
 /** Marks the signed-in user as active now. Best effort: failures are ignored. */
 export async function touchLastActive(): Promise<void> {
-  if (IS_PREVIEW) return;
-  await supabase.rpc('touch_last_active').then(
+  if (IS_PREVIEW) {
+    previewData.syncPassiveExp();
+    return;
+  }
+  await Promise.all([
+    supabase.rpc('touch_last_active'),
+    supabase.rpc('sync_passive_exp'),
+  ]).then(
     () => {},
     () => {},
   );
+}
+
+export type HabitatSlot = { zone: 'sky' | 'earth' | 'water'; pet_id: string };
+
+/** The signed-in user's habitat: at most one pet for sky, earth, and water. */
+export async function fetchHabitat(): Promise<HabitatSlot[]> {
+  if (IS_PREVIEW) return previewData.habitat();
+  const { data, error } = await supabase.rpc('my_habitat');
+  if (error) throw error;
+  return (data ?? []) as HabitatSlot[];
+}
+
+/** Equip `petId` in its habitat band (same as habitat placement), or unequip when `place` is false. */
+export async function equipPet(petId: string, place: boolean): Promise<void> {
+  return setHabitatPet(petId, place);
+}
+
+/** Place `petId` in its zone, replacing whoever was there, or clear it when `place` is false. */
+export async function setHabitatPet(petId: string, place: boolean): Promise<void> {
+  if (IS_PREVIEW) {
+    previewData.setHabitat(petId, place);
+    return;
+  }
+  const { error } = await supabase.rpc('set_habitat_pet', { p_pet_id: petId, p_place: place });
+  if (error) throw error;
 }

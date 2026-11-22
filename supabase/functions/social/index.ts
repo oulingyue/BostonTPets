@@ -27,6 +27,8 @@ type SummaryRow = {
   pet_count: number | string;
   follows_you: boolean;
   followed_by_me: boolean;
+  avatar_pet_id: string | null;
+  avatar_is_gold: boolean;
 };
 
 /** Same normalization as src/lib/handle.ts. Returns null if it isn't a valid handle. */
@@ -53,7 +55,12 @@ export default {
       const { data, error } = await admin.rpc('user_summaries', { p_viewer: me, p_ids: ids });
       if (error) throw error;
       // bigint can arrive as a string
-      return (data as SummaryRow[]).map((row) => ({ ...row, pet_count: Number(row.pet_count) }));
+      return (data as SummaryRow[]).map((row) => ({
+        ...row,
+        pet_count: Number(row.pet_count),
+        avatar_pet_id: row.avatar_pet_id ?? null,
+        avatar_is_gold: Boolean(row.avatar_is_gold),
+      }));
     }
 
     async function countFollows(column: 'follower_id' | 'followee_id', userId: string) {
