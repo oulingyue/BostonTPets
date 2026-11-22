@@ -66,7 +66,7 @@ export default {
           });
         }
         case 'leaderboard': {
-          // Ranking rules (demo accounts left out, ties, who's on each board) are in the leaderboard SQL function.
+          // Ranking rules (ties, who's on each board) are in the leaderboard SQL function.
           const scope = body.scope;
           if (scope !== 'global' && scope !== 'friends') return Response.json({ error: 'bad_request' }, { status: 400 });
           const { data, error } = await admin.rpc('leaderboard', { p_viewer: userId, p_scope: scope, p_limit: LEADERBOARD_SIZE });

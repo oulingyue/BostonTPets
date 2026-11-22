@@ -16,6 +16,7 @@ const MAX_FOLLOW_LIST = 500;
 type SocialRequest =
   | { action: 'search'; query?: unknown }
   | { action: 'profile'; handle?: unknown }
+  | { action: 'habitat'; handle?: unknown }
   | { action: 'follows'; handle?: unknown; kind?: unknown }
   | { action: 'counts' }
   | { action: 'follow' | 'unfollow'; userId?: unknown };
@@ -114,6 +115,16 @@ export default {
             stats: { total_scans: Number(row.total_scans), lines_visited: Number(row.lines_visited), points: Number(row.points) },
             pets: pets.data,
           });
+        }
+
+        case 'habitat': {
+          const handle = asHandle(body.handle);
+          if (!handle) return Response.json([]);
+          const person = await idForHandle(handle);
+          if (!person) return Response.json([]);
+          const { data, error } = await admin.from('habitat_pets').select('zone, pet_id').eq('user_id', person.id);
+          if (error) throw error;
+          return Response.json(data ?? []);
         }
 
         case 'follows': {
