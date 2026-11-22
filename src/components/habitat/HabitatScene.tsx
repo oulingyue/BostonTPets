@@ -88,7 +88,7 @@ function AddButton({
       hitSlop={8}
       style={({ pressed }) => [styles.plus, style, pressed && styles.plusPressed]}
     >
-      <PixelIcon name={filled ? 'swap' : 'plus'} size={16} color="#10131C" />
+      <PixelIcon name="plus" size={16} color="#10131C" />
     </Pressable>
   );
 }
