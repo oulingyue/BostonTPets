@@ -1,8 +1,8 @@
-import { DAILY_BONUS, GOLD_MULTIPLIER, POINTS_DUPLICATE, POINTS_NEW } from '@game/points';
-import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useNavigation } from 'expo-router';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
+import { PointsInfoSheet } from '@/components/PointsInfoSheet';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { fetchLeaderboard, type LeaderboardEntry, type LeaderboardScope } from '@/lib/api';
 import { useFocusedData } from '@/lib/useAsync';
@@ -13,14 +13,30 @@ import { colors, spacing } from '@/theme';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-const HOW_POINTS_WORK =
-  `New pet ${POINTS_NEW.common}–${POINTS_NEW.legendary} · duplicate ${POINTS_DUPLICATE.common}–${POINTS_DUPLICATE.legendary}` +
-  ` · gold ×${GOLD_MULTIPLIER} · +${DAILY_BONUS} for your first scan of the day`;
-
 const formatPoints = (n: number) => n.toLocaleString('en-US');
 
 export default function LeaderboardScreen() {
   const [scope, setScope] = useState<LeaderboardScope>('global');
+  const [infoOpen, setInfoOpen] = useState(false);
+  const navigation = useNavigation();
+
+  // ⓘ in the header's top-left opens the points rules.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <Pressable
+          onPress={() => setInfoOpen(true)}
+          style={({ pressed }) => [styles.infoButton, pressed && { opacity: 0.6 }]}
+          accessibilityRole="button"
+          accessibilityLabel="How points work"
+          hitSlop={8}
+        >
+          <Text style={styles.infoText}>i</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
+  const infoSheet = <PointsInfoSheet visible={infoOpen} onClose={() => setInfoOpen(false)} />;
 
   // Both boards load together, so switching between them is instant.
   const load = useCallback(async () => {
@@ -29,13 +45,19 @@ export default function LeaderboardScreen() {
   }, []);
   const { data, error, loading, refresh } = useFocusedData(load);
 
-  if (!data && loading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (!data && loading) {
+    return (
+      <>
+        <ActivityIndicator style={{ flex: 1 }} />
+        {infoSheet}
+      </>
+    );
+  }
 
   const board = data?.[scope];
   const entries = board?.entries ?? [];
   const me = board?.me ?? null;
   const meBelow = me && !entries.some((e) => e.is_me) ? me : null;
-  const onlyMe = scope === 'friends' && entries.length <= 1;
 
   return (
     <View style={{ flex: 1 }}>
@@ -55,26 +77,11 @@ export default function LeaderboardScreen() {
               value={scope}
               onChange={setScope}
             />
-            <Text style={styles.rules}>{HOW_POINTS_WORK}</Text>
             {error && <Text style={styles.error}>{error}</Text>}
           </View>
         }
         ListEmptyComponent={
           error ? undefined : <Text style={styles.empty}>No one has scored yet. Scan a code to take first place.</Text>
-        }
-        ListFooterComponent={
-          onlyMe ? (
-            <View style={styles.invite}>
-              <Text style={styles.empty}>Follow people to see how you stack up.</Text>
-              <Pressable
-                style={({ pressed }) => [styles.addFriends, pressed && { opacity: 0.85 }]}
-                onPress={() => router.push('/friends/search')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.addFriendsText}>Add friends</Text>
-              </Pressable>
-            </View>
-          ) : undefined
         }
       />
       {/* Your own row stays in view when you're outside the top 50 (or not on Global yet). */}
@@ -83,6 +90,7 @@ export default function LeaderboardScreen() {
           {meBelow ? <Row entry={meBelow} /> : <Text style={styles.pinnedHint}>Scan a code to get on the board.</Text>}
         </View>
       )}
+      {infoSheet}
     </View>
   );
 }
@@ -120,18 +128,20 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
 
 const styles = StyleSheet.create({
   container: { padding: spacing.md, gap: spacing.sm },
-  rules: { fontSize: 12, color: colors.muted, textAlign: 'center' },
   error: { color: colors.danger, textAlign: 'center' },
   empty: { textAlign: 'center', color: colors.muted, padding: spacing.md },
-  invite: { alignItems: 'stretch', gap: spacing.sm, marginTop: spacing.sm },
-  addFriends: {
-    minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
+  infoButton: {
+    marginLeft: spacing.md,
+    marginRight: spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addFriendsText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  infoText: { color: colors.primary, fontSize: 15, fontWeight: '800', fontStyle: 'italic' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

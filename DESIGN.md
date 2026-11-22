@@ -216,7 +216,8 @@ A **Leaderboard** tab (Collection | Scan | Leaderboard | Profile; Scan is a norm
 - **Global:** every player with more than 0 points. Top **50**.
 - **Friends:** you plus everyone you follow (one-way, so it works before anyone follows you back), including people with 0 points.
 - **Demo accounts** (`is_demo`) are never ranked: their odds and lack of cooldowns would top every board.
-- Your own row is highlighted, and pinned below the list when you're outside the top 50. On Global with no points yet, the pin says "Scan a code to get on the board". Friends with nobody followed shows an **Add friends** button.
+- Your own row is highlighted, and pinned below the list when you're outside the top 50. On Global with no points yet, the pin says "Scan a code to get on the board".
+- An **ⓘ** button at the top left of the header opens a closable sheet explaining the points rules (table, gold, daily bonus, who is on each board).
 - Rows: rank (medals for the top 3), avatar, name, @handle, pet count, points. Tapping a row opens that profile.
 - **Ties:** whoever reached the score first (earlier last scan), then earlier sign-up.
 
