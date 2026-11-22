@@ -4,10 +4,11 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { FollowButton } from '@/components/FollowButton';
 import type { UserSummary } from '@/lib/api';
 import { useSession } from '@/lib/session';
-import { colors, spacing } from '@/theme';
+import { cardStyle, fonts, spacing, useStyles, type Palette } from '@/theme';
 
 /** A person in search results or a follow list. Tapping opens their profile. */
 export function UserRow({ user }: { user: UserSummary }) {
+  const styles = useStyles(makeStyles);
   const { session } = useSession();
   const isMe = session?.user.id === user.id;
   const name = user.display_name ?? `@${user.handle}`;
@@ -44,18 +45,11 @@ export function UserRow({ user }: { user: UserSummary }) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 },
-  name: { fontSize: 15, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 13, color: colors.muted },
-  followsYou: { fontSize: 11, fontWeight: '700', color: '#4F4F4F', marginTop: 2 },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 10, paddingHorizontal: 12, ...cardStyle(c) },
+    main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 },
+    name: { fontFamily: fonts.heavy, fontSize: 15, color: c.text },
+    meta: { fontFamily: fonts.bold, fontSize: 13, color: c.muted },
+    followsYou: { fontFamily: fonts.heavy, fontSize: 11, color: c.text, marginTop: 2 },
+  });

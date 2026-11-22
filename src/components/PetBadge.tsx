@@ -13,13 +13,14 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { colors } from '@/theme';
+import { usePalette } from '@/theme';
 import { PetSprite } from './PetSprite';
 
 type Props = { petId: string; owned: boolean; isGold?: boolean; size?: number };
 
 /**
- * Pet art on a circle: line color for a line-exclusive, neutral for a shared common.
+ * Pet art on a rounded tile: line color for a line-exclusive, neutral for a shared common, outlined like the
+ * rest of the pixel UI.
  * Art comes from src/lib/petArt.ts, keyed by pet id. Pets without art show their emoji.
  * Unowned pets show as a silhouette. Gold pets get a gold ring, a GOLD stamp, and a shine that sweeps across.
  */
@@ -27,6 +28,8 @@ export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
   const pet = getPet(petId);
   const tint = pet?.line ? LINE_INFO[pet.line].color : COMMON_COLOR;
   const gold = owned && isGold;
+  const c = usePalette();
+  const outline = owned ? (c.scheme === 'dark' ? c.shadow : c.border) : c.lockedBorder;
   return (
     <View
       style={{ width: size, height: size }}
@@ -38,10 +41,10 @@ export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
           {
             width: size,
             height: size,
-            borderRadius: size / 2,
-            backgroundColor: owned ? tint : colors.locked,
-            borderColor: gold ? GOLD_COLOR : 'transparent',
-            borderWidth: gold ? Math.max(3, size / 14) : 0,
+            borderRadius: Math.round(size * 0.24),
+            backgroundColor: owned ? tint : c.locked,
+            borderColor: gold ? GOLD_COLOR : outline,
+            borderWidth: gold ? Math.max(3, size / 14) : Math.max(2, Math.round(size / 22)),
           },
         ]}
       >

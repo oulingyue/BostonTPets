@@ -15,7 +15,7 @@ import { PetSheet } from '@/components/PetSheet';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { fetchHabitat, fetchMyPets, type OwnedPet } from '@/lib/api';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors } from '@/theme';
+import { cardStyle, fonts, useStyles, type Palette } from '@/theme';
 
 type Grouping = 'rarity' | 'lines';
 
@@ -52,13 +52,14 @@ const loadCollection = async () => {
 };
 
 export default function CollectionScreen() {
+  const styles = useStyles(makeStyles);
   const { data, error, loading, refresh } = useFocusedData(useCallback(loadCollection, []));
   const pets = data?.pets;
   const [view, setView] = useState<Grouping>('rarity');
   const [openPetId, setOpenPetId] = useState<string | null>(null);
   const { width } = useWindowDimensions();
 
-  if (!pets && loading) return <ActivityIndicator style={styles.loading} />;
+  if (!pets && loading) return <ActivityIndicator style={styles.loading} color={styles.sectionTitle.color} />;
 
   // user_pets rows keyed by catalog pet_id. Ids no longer in the catalog (old skeleton rows) are ignored.
   const ownedById = new Map<string, OwnedPet>((pets ?? []).filter((p) => CATALOG[p.pet_id]).map((p) => [p.pet_id, p]));
@@ -145,6 +146,7 @@ export default function CollectionScreen() {
 }
 
 function Stat({ value, label }: { value: string; label: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.stat}>
       <Text style={styles.statValue}>{value}</Text>
@@ -154,6 +156,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 function Section(props: { title: string; color?: string; found: number; total: number; children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -172,41 +175,27 @@ function Section(props: { title: string; color?: string; found: number; total: n
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  loading: { flex: 1, backgroundColor: colors.background },
-  container: { padding: PADDING, paddingBottom: 48, maxWidth: MAX_WIDTH, width: '100%', alignSelf: 'center' },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.background },
+    loading: { flex: 1, backgroundColor: c.background },
+    container: { padding: PADDING, paddingBottom: 48, maxWidth: MAX_WIDTH, width: '100%', alignSelf: 'center' },
 
-  stats: { flexDirection: 'row', gap: 8 },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-  },
-  statValue: { fontSize: 17, fontWeight: '800', color: colors.text },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.muted,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
+    stats: { flexDirection: 'row', gap: 12 },
+    stat: { flex: 1, alignItems: 'center', paddingTop: 10, paddingBottom: 9, ...cardStyle(c) },
+    statValue: { fontFamily: fonts.pixelBold, fontSize: 22, color: c.scheme === 'dark' ? c.accent : c.text },
+    statLabel: { fontFamily: fonts.heavy, fontSize: 12, color: c.muted, marginTop: 1 },
 
-  error: { color: colors.danger, textAlign: 'center', marginTop: 12 },
-  empty: { textAlign: 'center', color: colors.muted, marginTop: 14 },
+    error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center', marginTop: 12 },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, marginTop: 14 },
 
-  selector: { marginTop: 16, marginBottom: 20 },
+    selector: { marginTop: 16, marginBottom: 20 },
 
-  section: { marginBottom: 28 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionDot: { width: 12, height: 12, borderRadius: 6 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  sectionCount: { fontSize: 13, fontWeight: '600', color: colors.muted },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: COL_GAP, rowGap: 16 },
-});
+    section: { marginBottom: 28 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    sectionDot: { width: 12, height: 12, borderRadius: 3 },
+    sectionTitle: { fontFamily: fonts.pixelBold, fontSize: 16, letterSpacing: 1, color: c.text },
+    sectionCount: { fontFamily: fonts.heavy, fontSize: 13, color: c.muted },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: COL_GAP, rowGap: 16 },
+  });

@@ -1,58 +1,29 @@
 import { Tabs } from 'expo-router/js-tabs';
-import { Text } from 'react-native';
-import { colors } from '@/theme';
-
-function TabIcon({ glyph, focused }: { glyph: string; focused: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{glyph}</Text>;
-}
+import { AppHeader } from '@/components/ui/AppHeader';
+import { TabBar } from '@/components/ui/TabBar';
+import { usePalette } from '@/theme';
 
 export default function TabLayout() {
+  const c = usePalette();
   return (
     <Tabs
+      tabBar={(props) => <TabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        headerStyle: { backgroundColor: colors.background },
-        sceneStyle: { backgroundColor: colors.background },
+        header: ({ options }) => (
+          <AppHeader
+            title={typeof options.title === 'string' ? options.title : ''}
+            right={options.headerRight?.({ tintColor: c.signText, canGoBack: false })}
+          />
+        ),
+        sceneStyle: { backgroundColor: c.background },
         animation: 'none',
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Habitat',
-          headerShown: false,
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🏡" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="collection"
-        options={{
-          title: 'Collection',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="📖" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="scan"
-        options={{
-          title: 'Scan',
-          headerShown: false,
-          tabBarIcon: ({ focused }) => <TabIcon glyph="📷" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="leaderboard"
-        options={{
-          title: 'Leaderboard',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🏆" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🚇" focused={focused} />,
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Habitat', headerShown: false }} />
+      <Tabs.Screen name="collection" options={{ title: 'Collection' }} />
+      <Tabs.Screen name="scan" options={{ title: 'Scan', headerShown: false }} />
+      <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

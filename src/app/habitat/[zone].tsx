@@ -1,11 +1,12 @@
 import { getPet, isHabitat, type Habitat } from '@game/catalog';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { CreatureBadge } from '@/components/CreatureBadge';
+import { Button } from '@/components/ui/Button';
 import { fetchHabitat, fetchMyPets, setHabitatPet, type OwnedPet } from '@/lib/api';
 import { errorText, useFocusedData } from '@/lib/useAsync';
-import { colors } from '@/theme';
+import { fonts, radius, useStyles, type Palette } from '@/theme';
 
 const LABEL: Record<Habitat, string> = { sky: 'Sky', earth: 'Earth', water: 'Water' };
 const COLUMNS = 3;
@@ -13,6 +14,7 @@ const GAP = 12;
 const PADDING = 16;
 
 export default function HabitatPicker() {
+  const styles = useStyles(makeStyles);
   const { zone: zoneParam } = useLocalSearchParams<{ zone: string }>();
   const zone = typeof zoneParam === 'string' && isHabitat(zoneParam) ? zoneParam : null;
   const pets = useFocusedData(useCallback(fetchMyPets, []));
@@ -67,7 +69,7 @@ export default function HabitatPicker() {
                   <CreatureBadge
                     petId={pet.pet_id}
                     owned={pet}
-                    width={badgeWidth - (selected ? 6 : 0)}
+                    width={badgeWidth - 6}
                     onPress={() => choose(pet.pet_id, !selected)}
                   />
                   {selected && <Text style={styles.here}>Equipped</Text>}
@@ -76,15 +78,14 @@ export default function HabitatPicker() {
             })}
           </View>
           {placedId && (
-            <Pressable
-              accessibilityRole="button"
+            <Button
+              title="Unequip"
+              variant="outline"
               accessibilityLabel="Unequip pet"
               disabled={busy}
               onPress={() => choose(placedId, false)}
-              style={({ pressed }) => [styles.remove, { opacity: pressed || busy ? 0.6 : 1 }]}
-            >
-              <Text style={styles.removeText}>Unequip</Text>
-            </Pressable>
+              style={styles.remove}
+            />
           )}
         </ScrollView>
       )}
@@ -92,25 +93,17 @@ export default function HabitatPicker() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  loading: { marginTop: 32 },
-  container: { padding: PADDING, paddingBottom: 40, maxWidth: 560, width: '100%', alignSelf: 'center' },
-  note: { color: colors.muted, fontSize: 14, marginBottom: 16 },
-  empty: { color: colors.muted, textAlign: 'center', marginTop: 32, marginHorizontal: 24, fontSize: 16 },
-  error: { color: colors.danger, textAlign: 'center', margin: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP, rowGap: 16 },
-  cell: { alignItems: 'center' },
-  selected: { borderWidth: 3, borderColor: colors.primary, borderRadius: 12, paddingTop: 6 },
-  here: { fontSize: 11, fontWeight: '700', color: colors.primary, marginTop: 4, marginBottom: 6 },
-  remove: {
-    marginTop: 24,
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.text,
-    backgroundColor: colors.surface,
-  },
-  removeText: { fontSize: 15, fontWeight: '700', color: colors.text },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.background },
+    loading: { marginTop: 32 },
+    container: { padding: PADDING, paddingBottom: 40, maxWidth: 560, width: '100%', alignSelf: 'center' },
+    note: { fontFamily: fonts.bold, color: c.muted, fontSize: 14, marginBottom: 16 },
+    empty: { fontFamily: fonts.bold, color: c.muted, textAlign: 'center', marginTop: 32, marginHorizontal: 24, fontSize: 16 },
+    error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center', margin: 16 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: GAP, rowGap: 16 },
+    cell: { alignItems: 'center', borderWidth: 3, borderColor: 'transparent', borderRadius: radius.md, paddingTop: 6 },
+    selected: { borderColor: c.accent, backgroundColor: c.sunken },
+    here: { fontFamily: fonts.pixelBold, fontSize: 11, color: c.text, marginTop: 4, marginBottom: 6 },
+    remove: { marginTop: 24 },
+  });

@@ -8,6 +8,7 @@ import { PetGrid } from '@/components/PetGrid';
 import { PetSheet } from '@/components/PetSheet';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { Button } from '@/components/ui/Button';
 import {
   fetchMyFollowCounts,
   fetchHabitat,
@@ -20,11 +21,12 @@ import {
 } from '@/lib/api';
 import { signOut, useSession } from '@/lib/session';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors, spacing } from '@/theme';
+import { cardStyle, fonts, spacing, useStyles, type Palette } from '@/theme';
 
 type Tab = 'pets' | 'history';
 
 export default function ProfileScreen() {
+  const styles = useStyles(makeStyles);
   const { session } = useSession();
   const [tab, setTab] = useState<Tab>('pets');
   const [openPet, setOpenPet] = useState<OwnedPet | null>(null);
@@ -79,13 +81,7 @@ export default function ProfileScreen() {
                 : undefined
             }
             action={
-              <Pressable
-                style={({ pressed }) => [styles.addFriends, pressed && { opacity: 0.85 }]}
-                onPress={() => router.push('/friends/search')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.addFriendsText}>Add friends</Text>
-              </Pressable>
+              <Button title="Add friends" onPress={() => router.push('/friends/search')} />
             }
           />
         )}
@@ -163,32 +159,18 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  goldTag: { backgroundColor: GOLD_COLOR, color: '#3a2a00', fontSize: 11, fontWeight: '900' },
-  container: { padding: spacing.md, gap: spacing.md },
-  error: { color: colors.danger, textAlign: 'center' },
-  demo: { fontSize: 11, fontWeight: '800', color: colors.danger, letterSpacing: 1 },
-  addFriends: {
-    minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addFriendsText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  privateNote: { fontSize: 12, color: colors.muted },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
-  historyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.sm,
-  },
-  historyPet: { fontSize: 15, fontWeight: '600', color: colors.text },
-  historyMeta: { fontSize: 12, color: colors.muted },
-  signOut: { alignItems: 'center', padding: spacing.lg },
-  signOutText: { color: colors.danger, fontWeight: '700', fontSize: 16 },
-  devLink: { textAlign: 'center', color: colors.muted, fontSize: 13, paddingBottom: spacing.lg },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    goldTag: { backgroundColor: GOLD_COLOR, color: '#3a2a00', fontFamily: fonts.heavy, fontSize: 11 },
+    container: { padding: spacing.md, gap: spacing.md },
+    error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center' },
+    demo: { fontFamily: fonts.pixelBold, fontSize: 11, color: c.danger, letterSpacing: 1 },
+    privateNote: { fontFamily: fonts.body, fontSize: 12, color: c.muted },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
+    historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm, ...cardStyle(c), borderRadius: 12 },
+    historyPet: { fontFamily: fonts.heavy, fontSize: 15, color: c.text },
+    historyMeta: { fontFamily: fonts.body, fontSize: 12, color: c.muted },
+    signOut: { alignItems: 'center', padding: spacing.lg },
+    signOutText: { fontFamily: fonts.heavy, color: c.danger, fontSize: 16 },
+    devLink: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, fontSize: 13, paddingBottom: spacing.lg },
+  });

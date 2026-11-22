@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { UserAvatar } from '@/components/UserAvatar';
 import type { PublicPet, Stats } from '@/lib/api';
 import { formatDate, isActiveNow, lastActiveLabel } from '@/lib/time';
-import { colors, spacing } from '@/theme';
+import { cardStyle, fonts, spacing, useStyles, type Palette } from '@/theme';
 
 type Props = {
   displayName: string | null;
@@ -29,6 +29,7 @@ type Props = {
 
 /** Top of a profile, shared by your own profile and other people's. */
 export function ProfileHeader(p: Props) {
+  const styles = useStyles(makeStyles);
   const name = p.displayName ?? (p.handle ? `@${p.handle}` : 'Rider');
   const gold = p.pets.filter((x) => x.is_gold).length;
   const tiles = [
@@ -116,6 +117,7 @@ export function ProfileHeader(p: Props) {
 }
 
 function Count({ value, label, divider, onPress }: { value: number; label: string; divider?: boolean; onPress?: () => void }) {
+  const styles = useStyles(makeStyles);
   const body = (
     <>
       <Text style={styles.countValue}>{value}</Text>
@@ -136,49 +138,34 @@ function Count({ value, label, divider, onPress }: { value: number; label: strin
   );
 }
 
-const styles = StyleSheet.create({
-  identity: { alignItems: 'center', gap: 4, paddingTop: spacing.sm },
-  avatarHint: { fontSize: 12, fontWeight: '600', color: colors.primary, textAlign: 'center', marginTop: 6 },
-  name: { marginTop: spacing.sm, fontSize: 24, fontWeight: '800', color: colors.text },
-  handleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  handle: { fontSize: 15, fontWeight: '500', color: colors.muted },
-  followsYou: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    overflow: 'hidden',
-    backgroundColor: '#E9E5DC',
-    color: '#4F4F4F',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 6 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#00843D' },
-  meta: { fontSize: 13, color: colors.muted },
-  counts: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-  },
-  count: { flex: 1, alignItems: 'center', paddingVertical: 10, minHeight: 44 },
-  countDivider: { borderLeftWidth: 1, borderLeftColor: colors.border },
-  countValue: { fontSize: 18, fontWeight: '800', color: colors.text },
-  countLabel: { fontSize: 12, color: colors.muted },
-  tiles: { flexDirection: 'row', gap: spacing.sm },
-  tile: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    gap: 2,
-  },
-  tileValue: { fontSize: 17, fontWeight: '800', color: colors.text },
-  tileLabel: { fontSize: 10, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    identity: { alignItems: 'center', gap: 4, paddingTop: spacing.sm },
+    avatarHint: { fontFamily: fonts.heavy, fontSize: 12, color: c.link, textAlign: 'center', marginTop: 6 },
+    name: { marginTop: spacing.sm, fontFamily: fonts.pixelBold, fontSize: 22, letterSpacing: 1, color: c.text },
+    handleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    handle: { fontFamily: fonts.bold, fontSize: 15, color: c.muted },
+    followsYou: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+      overflow: 'hidden',
+      backgroundColor: c.sunken,
+      color: c.text,
+      fontFamily: fonts.heavy,
+      fontSize: 11,
+    },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 6 },
+    metaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    onlineDot: { width: 8, height: 8, borderRadius: 2, backgroundColor: '#00A651' },
+    meta: { fontFamily: fonts.body, fontSize: 13, color: c.muted },
+    counts: { flexDirection: 'row', ...cardStyle(c) },
+    count: { flex: 1, alignItems: 'center', paddingVertical: 10, minHeight: 44 },
+    countDivider: { borderLeftWidth: 2, borderLeftColor: c.scheme === 'dark' ? c.border : c.lockedBorder },
+    countValue: { fontFamily: fonts.pixelBold, fontSize: 18, color: c.text },
+    countLabel: { fontFamily: fonts.bold, fontSize: 12, color: c.muted },
+    tiles: { flexDirection: 'row', gap: spacing.sm },
+    tile: { flex: 1, paddingVertical: 10, paddingHorizontal: 4, alignItems: 'center', gap: 3, ...cardStyle(c), borderRadius: 12 },
+    tileValue: { fontFamily: fonts.pixelBold, fontSize: 16, color: c.scheme === 'dark' ? c.accent : c.text },
+    tileLabel: { fontFamily: fonts.heavy, fontSize: 11, color: c.muted },
+  });

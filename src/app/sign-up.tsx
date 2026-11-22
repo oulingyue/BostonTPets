@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { authStyles as styles } from '@/components/authStyles';
+import { useAuthStyles } from '@/components/authStyles';
 import { isHandleAvailable } from '@/lib/api';
 import { HANDLE_MAX, handleProblem, normalizeHandle } from '@/lib/handle';
 import { signUp } from '@/lib/session';
-import { colors } from '@/theme';
+import { fonts, usePalette, useStyles, type Palette } from '@/theme';
 
 type HandleStatus =
   | { kind: 'empty' }
@@ -19,6 +19,9 @@ type HandleStatus =
 const CHECK_DEBOUNCE_MS = 400;
 
 export default function SignUp() {
+  const styles = useAuthStyles();
+  const local = useStyles(makeLocal);
+  const c = usePalette();
   const [displayName, setDisplayName] = useState('');
   const [handleInput, setHandleInput] = useState('');
   const [email, setEmail] = useState('');
@@ -71,26 +74,27 @@ export default function SignUp() {
   }
 
   const statusText = {
-    empty: { text: 'Lowercase letters, numbers and _. This is how friends find you.', color: colors.muted },
-    invalid: { text: status.kind === 'invalid' ? status.message : '', color: colors.danger },
-    checking: { text: 'Checking…', color: colors.muted },
-    available: { text: `@${handle} is available`, color: '#00602C' },
-    taken: { text: `@${handle} is taken`, color: colors.danger },
-    unknown: { text: "Couldn't check right now. We'll confirm when you sign up.", color: colors.muted },
+    empty: { text: 'Lowercase letters, numbers and _. This is how friends find you.', color: c.muted },
+    invalid: { text: status.kind === 'invalid' ? status.message : '', color: c.danger },
+    checking: { text: 'Checking…', color: c.muted },
+    available: { text: `@${handle} is available`, color: c.scheme === 'dark' ? '#5BD18B' : '#00602C' },
+    taken: { text: `@${handle} is taken`, color: c.danger },
+    unknown: { text: "Couldn't check right now. We'll confirm when you sign up.", color: c.muted },
   }[status.kind];
 
   const borderColor =
     status.kind === 'available'
-      ? '#00843D'
+      ? c.scheme === 'dark' ? '#5BD18B' : '#00843D'
       : status.kind === 'taken' || status.kind === 'invalid'
-        ? colors.danger
-        : colors.border;
+        ? c.danger
+        : c.border;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <TextInput
         style={styles.input}
         placeholder="Display name"
+        placeholderTextColor={c.muted}
         accessibilityLabel="Display name"
         maxLength={30}
         value={displayName}
@@ -102,6 +106,7 @@ export default function SignUp() {
           <TextInput
             style={local.handleInput}
             placeholder="username"
+            placeholderTextColor={c.muted}
             accessibilityLabel="Username"
             accessibilityHint={statusText.text}
             autoCapitalize="none"
@@ -120,6 +125,7 @@ export default function SignUp() {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={c.muted}
         accessibilityLabel="Email"
         autoCapitalize="none"
         autoComplete="email"
@@ -130,6 +136,7 @@ export default function SignUp() {
       <TextInput
         style={styles.input}
         placeholder="Password (6+ characters)"
+        placeholderTextColor={c.muted}
         accessibilityLabel="Password, 6 or more characters"
         secureTextEntry
         autoComplete="new-password"
@@ -143,9 +150,9 @@ export default function SignUp() {
   );
 }
 
-const local = StyleSheet.create({
+const makeLocal = (c: Palette) => StyleSheet.create({
   handleBox: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 0 },
-  at: { fontSize: 16, fontWeight: '700', color: colors.muted },
-  handleInput: { flex: 1, fontSize: 16, paddingVertical: 16, color: colors.text },
-  status: { fontSize: 12, paddingHorizontal: 4 },
+  at: { fontFamily: fonts.heavy, fontSize: 16, color: c.muted },
+  handleInput: { flex: 1, fontFamily: fonts.bold, fontSize: 16, paddingVertical: 16, color: c.text },
+  status: { fontFamily: fonts.bold, fontSize: 12, paddingHorizontal: 4 },
 });

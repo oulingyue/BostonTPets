@@ -5,10 +5,12 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import { UserRow } from '@/components/UserRow';
 import { fetchFollows, type FollowKind } from '@/lib/api';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors, spacing } from '@/theme';
+import { fonts, spacing, usePalette, useStyles, type Palette } from '@/theme';
 
 /** Who a user follows and who follows them. `?tab=followers` opens the second tab. */
 export default function FollowList() {
+  const styles = useStyles(makeStyles);
+  const c = usePalette();
   const params = useLocalSearchParams<{ handle: string; tab?: string }>();
   const handle = params.handle ?? '';
   const [tab, setTab] = useState<FollowKind>(params.tab === 'followers' ? 'followers' : 'following');
@@ -42,7 +44,7 @@ export default function FollowList() {
         }
         ListEmptyComponent={
           error && !loading ? (
-            <Text style={[styles.empty, { color: colors.danger }]}>{error}</Text>
+            <Text style={[styles.empty, { color: c.danger }]}>{error}</Text>
           ) : loading || data?.tab !== tab ? (
             <ActivityIndicator style={{ marginTop: spacing.lg }} />
           ) : (
@@ -56,7 +58,8 @@ export default function FollowList() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.sm },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: spacing.md, gap: 10 },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
+  });

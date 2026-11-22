@@ -2,10 +2,12 @@ import { RARITIES } from '@game/catalog';
 import { DAILY_BONUS, GOLD_MULTIPLIER, POINTS_DUPLICATE, POINTS_NEW } from '@game/points';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, rarityStyle, spacing } from '@/theme';
+import { fonts, radius, spacing, usePalette, useStyles, type Palette } from '@/theme';
 
 /** Bottom sheet explaining how leaderboard points work. Numbers come from _shared/game/points.ts. */
 export function PointsInfoSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const styles = useStyles(makeStyles);
+  const c = usePalette();
   const insets = useSafeAreaInsets();
 
   return (
@@ -42,7 +44,7 @@ export function PointsInfoSheet({ visible, onClose }: { visible: boolean; onClos
             {RARITIES.map((r) => (
               <View key={r} style={[styles.tr, styles.rowBorder]}>
                 <View style={styles.first}>
-                  <Text style={[styles.chip, { backgroundColor: rarityStyle[r].bg, color: rarityStyle[r].fg }]}>{r}</Text>
+                  <Text style={[styles.chip, { backgroundColor: c.rarity[r].bg, color: c.rarity[r].fg }]}>{r}</Text>
                 </View>
                 <Text style={styles.td}>{POINTS_NEW[r]}</Text>
                 <Text style={styles.td}>{POINTS_DUPLICATE[r]}</Text>
@@ -65,6 +67,7 @@ export function PointsInfoSheet({ visible, onClose }: { visible: boolean; onClos
 }
 
 function Bonus({ label, text }: { label: string; text: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.bonus}>
       <Text style={styles.bonusLabel}>{label}</Text>
@@ -73,45 +76,51 @@ function Bonus({ label, text }: { label: string; text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    gap: spacing.md,
-  },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.text },
-  close: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1EFEA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeText: { fontSize: 16, fontWeight: '700', color: colors.text },
-  body: { fontSize: 14, color: colors.text, lineHeight: 20 },
-  table: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, overflow: 'hidden' },
-  tr: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12 },
-  rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  first: { flex: 1.3, alignItems: 'flex-start' },
-  th: { flex: 1, fontSize: 11, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'right' },
-  td: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'right', fontVariant: ['tabular-nums'] },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    overflow: 'hidden',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'capitalize',
-  },
-  bonus: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  bonusLabel: { width: 76, fontSize: 14, fontWeight: '800', color: colors.text },
-  bonusText: { flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 },
-  note: { fontSize: 12, color: colors.muted, lineHeight: 17 },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(5,8,15,0.55)' },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      borderWidth: 2,
+      borderBottomWidth: 0,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      gap: spacing.md,
+    },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    title: { fontFamily: fonts.pixelBold, fontSize: 18, letterSpacing: 1, color: c.text },
+    close: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: c.border,
+      backgroundColor: c.sunken,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeText: { fontFamily: fonts.heavy, fontSize: 15, color: c.text },
+    body: { fontFamily: fonts.body, fontSize: 14, color: c.text, lineHeight: 20 },
+    table: { borderWidth: 2, borderColor: c.border, borderRadius: radius.md, overflow: 'hidden' },
+    tr: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12 },
+    rowBorder: { borderTopWidth: 1, borderTopColor: c.scheme === 'dark' ? c.border : c.lockedBorder },
+    first: { flex: 1.3, alignItems: 'flex-start' },
+    th: { flex: 1, fontFamily: fonts.heavy, fontSize: 12, color: c.muted, textAlign: 'right' },
+    td: { flex: 1, fontFamily: fonts.pixelBold, fontSize: 15, color: c.text, textAlign: 'right' },
+    chip: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 999,
+      overflow: 'hidden',
+      fontFamily: fonts.heavy,
+      fontSize: 12,
+      textTransform: 'capitalize',
+    },
+    bonus: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+    bonusLabel: { width: 84, fontFamily: fonts.heavy, fontSize: 14, color: c.text },
+    bonusText: { flex: 1, fontFamily: fonts.body, fontSize: 14, color: c.text, lineHeight: 20 },
+    note: { fontFamily: fonts.body, fontSize: 12, color: c.muted, lineHeight: 17 },
+  });

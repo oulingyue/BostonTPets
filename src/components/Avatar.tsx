@@ -1,5 +1,6 @@
 import { LINE_INFO, LINES } from '@game/catalog';
 import { StyleSheet, Text, View } from 'react-native';
+import { fonts, usePalette } from '@/theme';
 
 // Text color per line color, picked for contrast (white fails on orange and silver).
 const TEXT_ON: Record<(typeof LINES)[number], string> = {
@@ -18,18 +19,29 @@ function initials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-/** Initials on a circle in a line color. The color is derived from `seed` so it stays the same per user. */
+/** Initials on a rounded square in a line color. The color is derived from `seed` so it stays the same per user. */
 export function Avatar({ name, seed, size = 44 }: { name: string; seed: string; size?: number }) {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
   const line = LINES[Math.abs(hash) % LINES.length];
+  const c = usePalette();
 
   return (
     <View
-      style={[styles.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: LINE_INFO[line].color }]}
+      style={[
+        styles.circle,
+        {
+          width: size,
+          height: size,
+          borderRadius: Math.round(size * 0.24),
+          borderWidth: Math.max(2, Math.round(size / 22)),
+          borderColor: c.scheme === 'dark' ? c.shadow : c.border,
+          backgroundColor: LINE_INFO[line].color,
+        },
+      ]}
       accessible={false}
     >
-      <Text style={{ color: TEXT_ON[line], fontSize: size * 0.36, fontWeight: '800' }}>{initials(name)}</Text>
+      <Text style={{ color: TEXT_ON[line], fontSize: size * 0.32, fontFamily: fonts.pixelBold }}>{initials(name)}</Text>
     </View>
   );
 }

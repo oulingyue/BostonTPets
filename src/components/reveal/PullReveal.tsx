@@ -902,6 +902,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, points, onDo
                 fill={expFill}
                 detail={`${shown.exp} / ${shown.expToNext} EXP`}
                 fontStyle={pixelFont}
+                onLight
               />
               {progress.gained > 0 && (
                 <Animated.Text style={[styles.expPop, pixelFontBold, expPopStyle]}>+{progress.gained} EXP</Animated.Text>

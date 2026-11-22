@@ -1,10 +1,14 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { authStyles as styles } from '@/components/authStyles';
+import { useAuthStyles } from '@/components/authStyles';
+import { LineStripe } from '@/components/ui/AppHeader';
 import { signIn } from '@/lib/session';
+import { usePalette } from '@/theme';
 
 export default function SignIn() {
+  const styles = useAuthStyles();
+  const c = usePalette();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -24,13 +28,21 @@ export default function SignIn() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.hero}>
-        <Text style={styles.title}>BostonTPets</Text>
+        <View style={styles.sign}>
+          <Text style={styles.title} accessibilityRole="header">
+            BostonTPets
+          </Text>
+          <View style={{ alignSelf: 'stretch' }}>
+            <LineStripe />
+          </View>
+        </View>
         <Text style={styles.subtitle}>🐥 🦃 🦭 🦞</Text>
         <Text style={styles.tagline}>Ride the T. Scan codes. Collect them all.</Text>
       </View>
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor={c.muted}
         autoCapitalize="none"
         autoComplete="email"
         keyboardType="email-address"
@@ -40,6 +52,7 @@ export default function SignIn() {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor={c.muted}
         secureTextEntry
         autoComplete="current-password"
         value={password}

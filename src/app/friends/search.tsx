@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { UserRow } from '@/components/UserRow';
 import { searchUsers, type UserSummary } from '@/lib/api';
-import { colors, spacing } from '@/theme';
+import { fonts, hardShadow, spacing, usePalette, useStyles, type Palette } from '@/theme';
 
 const DEBOUNCE_MS = 250;
 /** Same minimum as the social function. */
@@ -11,6 +11,8 @@ const MIN_QUERY = 3;
 type Results = { query: string; users: UserSummary[] } | { query: string; error: string };
 
 export default function FindPeople() {
+  const styles = useStyles(makeStyles);
+  const c = usePalette();
   const [input, setInput] = useState('');
   const [results, setResults] = useState<Results | null>(null);
   const query = input.trim().replace(/\s+/g, ' ');
@@ -53,7 +55,7 @@ export default function FindPeople() {
               value={input}
               onChangeText={setInput}
               placeholder="Name"
-              placeholderTextColor="#8A8780"
+              placeholderTextColor={c.muted}
               autoFocus
               autoCapitalize="words"
               autoCorrect={false}
@@ -79,7 +81,7 @@ export default function FindPeople() {
         ) : pending ? (
           <ActivityIndicator style={{ marginTop: spacing.lg }} />
         ) : results && 'error' in results ? (
-          <Text style={[styles.empty, { color: colors.danger }]}>{results.error}</Text>
+          <Text style={[styles.empty, { color: c.danger }]}>{results.error}</Text>
         ) : (
           <Text style={styles.empty}>No one with a username starting with “{query}”.</Text>
         )
@@ -88,21 +90,23 @@ export default function FindPeople() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.sm },
-  label: { fontSize: 13, fontWeight: '600', color: '#4F4F4F' },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 48,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-  },
-  input: { flex: 1, fontSize: 17, paddingVertical: 12, color: colors.text },
-  hint: { fontSize: 12, color: colors.muted },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: spacing.md, gap: 10 },
+    label: { fontFamily: fonts.heavy, fontSize: 13, color: c.muted },
+    inputWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      minHeight: 48,
+      backgroundColor: c.input,
+      borderWidth: 2,
+      borderColor: c.border,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      ...hardShadow(c),
+    },
+    input: { flex: 1, fontFamily: fonts.bold, fontSize: 17, paddingVertical: 12, color: c.text },
+    hint: { fontFamily: fonts.body, fontSize: 12, color: c.muted },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
+  });

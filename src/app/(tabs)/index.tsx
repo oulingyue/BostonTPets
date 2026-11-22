@@ -5,11 +5,12 @@ import { router } from 'expo-router';
 import { HabitatScene } from '@/components/habitat/HabitatScene';
 import { fetchHabitat } from '@/lib/api';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors } from '@/theme';
+import { useStyles, type Palette } from '@/theme';
 
 const loadHabitat = () => fetchHabitat();
 
 export default function HabitatScreen() {
+  const styles = useStyles(makeStyles);
   const { data, error, loading } = useFocusedData(useCallback(loadHabitat, []));
 
   if (!data && loading) {
@@ -34,16 +35,17 @@ export default function HabitatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#3EBEFF' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-  error: {
-    position: 'absolute',
-    zIndex: 4,
-    top: 8,
-    left: 16,
-    right: 16,
-    color: colors.danger,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: '#3EBEFF' },
+    loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background },
+    error: {
+      position: 'absolute',
+      zIndex: 4,
+      top: 8,
+      left: 16,
+      right: 16,
+      color: c.danger,
+      textAlign: 'center',
+    },
+  });

@@ -6,16 +6,18 @@ import { PointsInfoSheet } from '@/components/PointsInfoSheet';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { fetchLeaderboard, type LeaderboardEntry, type LeaderboardScope } from '@/lib/api';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors, spacing } from '@/theme';
+import { cardStyle, fonts, spacing, useStyles, type Palette } from '@/theme';
 
 // Points leaderboard: Global (everyone with points) and Friends (you + people you follow).
 // Scoring rules: supabase/functions/_shared/game/points.ts. Ranking rules: the leaderboard SQL function.
 
-const MEDALS = ['🥇', '🥈', '🥉'];
+/** Gold, silver and bronze rank badges for the top three. */
+const MEDALS = ['#F2C230', '#D5DAE3', '#E0A26A'];
 
 const formatPoints = (n: number) => n.toLocaleString('en-US');
 
 export default function LeaderboardScreen() {
+  const styles = useStyles(makeStyles);
   const [scope, setScope] = useState<LeaderboardScope>('global');
   const [infoOpen, setInfoOpen] = useState(false);
   const navigation = useNavigation();
@@ -35,7 +37,7 @@ export default function LeaderboardScreen() {
         </Pressable>
       ),
     });
-  }, [navigation]);
+  }, [navigation, styles]);
   const infoSheet = <PointsInfoSheet visible={infoOpen} onClose={() => setInfoOpen(false)} />;
 
   // Both boards load together, so switching between them is instant.
@@ -96,6 +98,7 @@ export default function LeaderboardScreen() {
 }
 
 function Row({ entry }: { entry: LeaderboardEntry }) {
+  const styles = useStyles(makeStyles);
   const name = entry.display_name ?? `@${entry.handle}`;
   const open = () =>
     entry.is_me ? router.navigate('/profile') : router.push({ pathname: '/user/[handle]', params: { handle: entry.handle } });
@@ -107,7 +110,9 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
       accessibilityRole="button"
       accessibilityLabel={`Rank ${entry.rank}, ${name}${entry.is_me ? ' (you)' : ''}, ${entry.points} points. Open profile`}
     >
-      <Text style={[styles.rank, entry.rank <= 3 && styles.medal]}>{MEDALS[entry.rank - 1] ?? entry.rank}</Text>
+      <View style={[styles.rankBox, entry.rank <= 3 && [styles.medal, { backgroundColor: MEDALS[entry.rank - 1] }]]}>
+        <Text style={[styles.rank, entry.rank <= 3 && styles.medalText]}>{entry.rank}</Text>
+      </View>
       <UserAvatar
         name={name}
         seed={entry.handle}
@@ -132,47 +137,33 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.sm },
-  error: { color: colors.danger, textAlign: 'center' },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.md },
-  infoButton: {
-    marginRight: spacing.md,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoText: { color: colors.primary, fontSize: 15, fontWeight: '800', fontStyle: 'italic' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    minHeight: 56,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  rowMe: { borderColor: colors.primary, backgroundColor: '#EEF3FB' },
-  rank: { width: 30, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.muted },
-  medal: { fontSize: 22 },
-  name: { fontSize: 15, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 13, color: colors.muted },
-  pointsBox: { alignItems: 'flex-end' },
-  points: { fontSize: 17, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
-  pointsLabel: { fontSize: 10, fontWeight: '600', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
-  pinned: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  pinnedHint: { textAlign: 'center', color: colors.muted, fontSize: 13, paddingVertical: spacing.xs },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: spacing.md, gap: 10 },
+    error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center' },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.md },
+    infoButton: {
+      marginRight: 4,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      borderWidth: 2,
+      borderColor: '#E8ECF5',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    infoText: { fontFamily: fonts.pixelBold, color: c.signText, fontSize: 14 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingVertical: 10, paddingLeft: 10, paddingRight: 14, ...cardStyle(c) },
+    rowMe: { backgroundColor: c.mine, borderColor: c.scheme === 'dark' ? c.accent : c.border },
+    rankBox: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    medal: { borderWidth: 2, borderColor: c.scheme === 'dark' ? c.shadow : c.border },
+    rank: { fontFamily: fonts.pixelBold, fontSize: 14, color: c.muted },
+    medalText: { color: '#10131C' },
+    name: { fontFamily: fonts.heavy, fontSize: 15, color: c.text },
+    meta: { fontFamily: fonts.bold, fontSize: 12, color: c.muted },
+    pointsBox: { alignItems: 'flex-end' },
+    points: { fontFamily: fonts.pixelBold, fontSize: 15, color: c.scheme === 'dark' ? c.accent : c.text },
+    pointsLabel: { fontFamily: fonts.bold, fontSize: 11, color: c.muted },
+    pinned: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md, backgroundColor: c.background },
+    pinnedHint: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, fontSize: 13, paddingVertical: spacing.xs },
+  });

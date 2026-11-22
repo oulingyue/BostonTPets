@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
 import type { OwnedPet } from '@/lib/api';
-import { colors, spacing } from '@/theme';
+import { fonts, spacing, useStyles, type Palette } from '@/theme';
 
 type Props = {
   visible: boolean;
@@ -15,6 +15,7 @@ type Props = {
 
 /** Pick a owned pet for your profile picture, or initials (clear). */
 export function AvatarPickerModal({ visible, pets, currentPetId, onClose, onSelect }: Props) {
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const sorted = [...pets].sort((a, b) => (getPet(a.pet_id)?.name ?? '').localeCompare(getPet(b.pet_id)?.name ?? ''));
 
@@ -71,30 +72,36 @@ export function AvatarPickerModal({ visible, pets, currentPetId, onClose, onSele
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: spacing.lg,
-    paddingTop: 10,
-    maxHeight: '80%',
-  },
-  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.locked, marginBottom: 12 },
-  title: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: colors.muted, textAlign: 'center', marginTop: 4, marginBottom: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingBottom: 8 },
-  cell: { width: 88, alignItems: 'center', padding: 8, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
-  cellSelected: { borderColor: colors.primary, backgroundColor: colors.background },
-  initialsCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#DA291C',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initialsText: { color: '#fff', fontWeight: '800', fontSize: 18 },
-  label: { fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center', marginTop: 6 },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(5,8,15,0.55)' },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      borderWidth: 2,
+      borderBottomWidth: 0,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingTop: 10,
+      maxHeight: '80%',
+    },
+    grabber: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: c.lockedBorder, marginBottom: 12 },
+    title: { fontFamily: fonts.pixelBold, fontSize: 18, letterSpacing: 1, color: c.text, textAlign: 'center' },
+    subtitle: { fontFamily: fonts.body, fontSize: 14, color: c.muted, textAlign: 'center', marginTop: 4, marginBottom: 16 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingBottom: 8 },
+    cell: { width: 88, alignItems: 'center', padding: 8, borderRadius: 14, borderWidth: 2, borderColor: 'transparent' },
+    cellSelected: { borderColor: c.scheme === 'dark' ? c.accent : c.border, backgroundColor: c.sunken },
+    initialsCircle: {
+      width: 56,
+      height: 56,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: c.scheme === 'dark' ? c.shadow : c.border,
+      backgroundColor: '#DA291C',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    initialsText: { fontFamily: fonts.pixelBold, color: '#fff', fontSize: 18 },
+    label: { fontFamily: fonts.heavy, fontSize: 11, color: c.text, textAlign: 'center', marginTop: 6 },
+  });
