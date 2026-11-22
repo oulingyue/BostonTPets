@@ -12,7 +12,41 @@ import { PIXEL_PET_ART } from './pixelPetArt';
 /** `silhouette`: the pet's shape in translucent black, shown until it's found. Without one, a "?" shows instead. */
 export type PetArt = { base: ImageSourcePropType; blink?: ImageSourcePropType; silhouette?: ImageSourcePropType };
 
-/** Hand-made art. Overrides the generated pixel art for the same id. */
-const HAND_MADE: Partial<Record<string, PetArt>> = {};
+/**
+ * Hand-picked art. Overrides the generated pixel art for the same id. Most are poses picked from
+ * assets/proposed/<id>/; these have no blink frame.
+ */
+const HAND_MADE: Partial<Record<string, PetArt>> = {
+  alewife: { base: require('../../assets/pets/hand/alewife.png'), silhouette: require('../../assets/pets/hand/alewife-silhouette.png') },
+  atlantic_cod: { base: require('../../assets/pets/hand/atlantic_cod.png'), silhouette: require('../../assets/pets/hand/atlantic_cod-silhouette.png') },
+  bc_eagle: { base: require('../../assets/pets/hand/bc_eagle.png'), silhouette: require('../../assets/pets/hand/bc_eagle-silhouette.png') },
+  blue_jay: { base: require('../../assets/pets/hand/blue_jay.png'), silhouette: require('../../assets/pets/hand/blue_jay-silhouette.png') },
+  boston_terrier: { base: require('../../assets/pets/hand/boston_terrier.png'), silhouette: require('../../assets/pets/hand/boston_terrier-silhouette.png') },
+  bu_terrier: { base: require('../../assets/pets/hand/bu_terrier.png'), silhouette: require('../../assets/pets/hand/bu_terrier-silhouette.png') },
+  bullfrog: { base: require('../../assets/pets/hand/bullfrog.png'), silhouette: require('../../assets/pets/hand/bullfrog-silhouette.png') },
+  gray_squirrel: { base: require('../../assets/pets/hand/gray_squirrel.png'), silhouette: require('../../assets/pets/hand/gray_squirrel-silhouette.png') },
+  harbor_seal: { base: require('../../assets/pets/hand/harbor_seal.png'), silhouette: require('../../assets/pets/hand/harbor_seal-silhouette.png') },
+  haymarket_rat: { base: require('../../assets/pets/hand/haymarket_rat.png'), silhouette: require('../../assets/pets/hand/haymarket_rat-silhouette.png') },
+  horseshoe_crab: { base: require('../../assets/pets/hand/horseshoe_crab.png'), silhouette: require('../../assets/pets/hand/horseshoe_crab-silhouette.png') },
+  humpback_whale: { base: require('../../assets/pets/hand/humpback_whale.png'), silhouette: require('../../assets/pets/hand/humpback_whale-silhouette.png') },
+  mit_beaver: { base: require('../../assets/pets/hand/mit_beaver.png'), silhouette: require('../../assets/pets/hand/mit_beaver-silhouette.png') },
+  monarch_butterfly: { base: require('../../assets/pets/hand/monarch_butterfly.png'), silhouette: require('../../assets/pets/hand/monarch_butterfly-silhouette.png') },
+  moon_jellyfish: { base: require('../../assets/pets/hand/moon_jellyfish.png'), silhouette: require('../../assets/pets/hand/moon_jellyfish-silhouette.png') },
+  northeastern_husky: { base: require('../../assets/pets/hand/northeastern_husky.png'), silhouette: require('../../assets/pets/hand/northeastern_husky-silhouette.png') },
+  northern_cardinal: { base: require('../../assets/pets/hand/northern_cardinal.png'), silhouette: require('../../assets/pets/hand/northern_cardinal-silhouette.png') },
+  orange_tabby_cat: { base: require('../../assets/pets/hand/orange_tabby_cat.png'), silhouette: require('../../assets/pets/hand/orange_tabby_cat-silhouette.png') },
+  penguin: { base: require('../../assets/pets/hand/penguin.png'), silhouette: require('../../assets/pets/hand/penguin-silhouette.png') },
+  peregrine_falcon: { base: require('../../assets/pets/hand/peregrine_falcon.png'), silhouette: require('../../assets/pets/hand/peregrine_falcon-silhouette.png') },
+  pigeon: { base: require('../../assets/pets/hand/pigeon.png'), silhouette: require('../../assets/pets/hand/pigeon-silhouette.png') },
+  piping_plover: { base: require('../../assets/pets/hand/piping_plover.png'), silhouette: require('../../assets/pets/hand/piping_plover-silhouette.png') },
+  raccoon: { base: require('../../assets/pets/hand/raccoon.png'), silhouette: require('../../assets/pets/hand/raccoon-silhouette.png') },
+  red_fox: { base: require('../../assets/pets/hand/red_fox.png'), silhouette: require('../../assets/pets/hand/red_fox-silhouette.png') },
+  red_tailed_hawk: { base: require('../../assets/pets/hand/red_tailed_hawk.png'), silhouette: require('../../assets/pets/hand/red_tailed_hawk-silhouette.png') },
+  snowy_owl: { base: require('../../assets/pets/hand/snowy_owl.png'), silhouette: require('../../assets/pets/hand/snowy_owl-silhouette.png') },
+  striped_bass: { base: require('../../assets/pets/hand/striped_bass.png'), silhouette: require('../../assets/pets/hand/striped_bass-silhouette.png') },
+  swan: { base: require('../../assets/pets/hand/swan.png'), silhouette: require('../../assets/pets/hand/swan-silhouette.png') },
+  wentworth_leopard: { base: require('../../assets/pets/hand/wentworth_leopard.png'), silhouette: require('../../assets/pets/hand/wentworth_leopard-silhouette.png') },
+  wild_turkey: { base: require('../../assets/pets/hand/wild_turkey.png'), silhouette: require('../../assets/pets/hand/wild_turkey-silhouette.png') },
+};
 
 export const PET_ART: Partial<Record<string, PetArt>> = { ...PIXEL_PET_ART, ...HAND_MADE };
