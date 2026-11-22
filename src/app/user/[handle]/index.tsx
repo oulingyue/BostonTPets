@@ -1,7 +1,8 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FollowButton } from '@/components/FollowButton';
+import { Button } from '@/components/ui/Button';
 import { PetGrid } from '@/components/PetGrid';
 import { PetSheet } from '@/components/PetSheet';
 import { ProfileHeader } from '@/components/ProfileHeader';
@@ -64,16 +65,26 @@ export default function UserProfile() {
           }
           action={
             isMe ? undefined : (
-              <FollowButton
-                wide
-                userId={profile.id}
-                name={name}
-                followed={profile.followed_by_me}
-                followsYou={profile.follows_you}
-                onChange={(followed) =>
-                  setAdjust({ for: profile, delta: followed === profile.followed_by_me ? 0 : followed ? 1 : -1 })
-                }
-              />
+              <View style={styles.actions}>
+                <FollowButton
+                  wide
+                  userId={profile.id}
+                  name={name}
+                  followed={profile.followed_by_me}
+                  followsYou={profile.follows_you}
+                  onChange={(followed) =>
+                    setAdjust({ for: profile, delta: followed === profile.followed_by_me ? 0 : followed ? 1 : -1 })
+                  }
+                />
+                <Button
+                  title="View habitat"
+                  variant="outline"
+                  accessibilityLabel={`View ${name}'s habitat`}
+                  onPress={() =>
+                    router.push({ pathname: '/user/[handle]/habitat', params: { handle: profile.handle } })
+                  }
+                />
+              </View>
             )
           }
         />
@@ -93,6 +104,7 @@ export default function UserProfile() {
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     container: { padding: spacing.md, gap: spacing.md },
+    actions: { gap: spacing.sm },
     error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center' },
     empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
     section: { fontFamily: fonts.pixelBold, fontSize: 16, letterSpacing: 1, color: c.text, marginTop: spacing.xs },

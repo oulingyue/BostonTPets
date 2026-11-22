@@ -165,7 +165,7 @@ Each band holds **one** pet the player owns:
 - **Water:** swimmers, including ducks, geese, swans, the penguin, the seal, the turtle, and the frog.
 - **Earth:** walkers, including the wild turkey.
 
-A plus on an empty band opens that zone's pets. Picking a different pet replaces the one in the band. The plus stays after a pet is placed so the player can swap or clear it. Tapping the pet in the scene only plays the hop. Rows live in `habitat_pets` (`20261121210000_habitat.sql`); the zone of each `pet_id` is `HABITAT_OF` in `catalog.ts`.
+A plus on an empty band opens that zone's pets. After a pet is placed, tap it to swap or unequip; the plus is gone until the band is empty again. Rows live in `habitat_pets` (`20261121210000_habitat.sql`); the zone of each `pet_id` is `HABITAT_OF` in `catalog.ts`.
 
 **Equip** is the same system: at most one pet in **air** (sky), **land** (earth), and **water**. Equip from the habitat home, the habitat picker, or a pet's sheet in Collection / Profile (`set_habitat_pet`). Equipped pets earn **passive EXP** stored on `user_pets.bonus_exp` (`20261122200000_passive_exp.sql`): **20 EXP/day** while equipped (~5 days for the first 100 EXP bar), synced when pets load or the app comes to the foreground. Offline accrual is capped at **7 days**. Passive EXP counts toward the same level bars as duplicate EXP (`leveling.ts`); it does not affect leaderboard points.
 
@@ -230,7 +230,7 @@ A **Leaderboard** tab (Collection | Scan | Leaderboard | Profile; Scan is a norm
 
 - **Global:** every player with more than 0 points. Top **50**.
 - **Friends:** you plus everyone you follow (one-way, so it works before anyone follows you back), including people with 0 points.
-- **Demo accounts** (`is_demo`) are never ranked: their odds and lack of cooldowns would top every board.
+- **Demo accounts** (`is_demo`) are ranked like everyone else, so the booth account shows on Global during the live demo.
 - Your own row is highlighted, and pinned below the list when you're outside the top 50. On Global with no points yet, the pin says "Scan a code to get on the board".
 - An **ⓘ** button at the top right of the header opens a closable sheet explaining the points rules (table, gold, daily bonus, who is on each board).
 - Rows: rank (medals for the top 3), avatar, name, @handle, pet count, points. Tapping a row opens that profile.
@@ -238,7 +238,7 @@ A **Leaderboard** tab (Collection | Scan | Leaderboard | Profile; Scan is a norm
 
 **Elsewhere:** the pull reveal shows "+N PTS" (and "incl. +50 daily"); profiles have a **Points** stat tile; the reveal playground has a **Daily bonus** toggle.
 
-**API:** `player` resource `leaderboard` with `scope: 'global' | 'friends'` → `{ entries, me }`, backed by the service-role `leaderboard(p_viewer, p_scope, p_limit)` RPC (migration `20251122170000_leaderboard.sql`). It returns public fields only (handle, display name, points, pet count).
+**API:** `player` resource `leaderboard` with `scope: 'global' | 'friends'` → `{ entries, me }`, backed by the service-role `leaderboard(p_viewer, p_scope, p_limit)` RPC (migration `20261122220000_leaderboard_include_demo.sql`). It returns public fields only (handle, display name, points, pet count).
 
 **Tiger (optional later):** weekly board from continuous aggregates; not required for MVP.
 

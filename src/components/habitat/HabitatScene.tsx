@@ -1,7 +1,6 @@
 import type { Habitat, Pet } from '@game/catalog';
 import { useState, type ReactNode } from 'react';
 import { Image, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PixelIcon } from '@/components/ui/PixelIcon';
 import { RoamingPet } from './RoamingPet';
 
@@ -13,31 +12,49 @@ const WATER_PET = 76;
 
 type Props = {
   pets: Partial<Record<Habitat, Pet>>;
-  onAdd: (zone: Habitat) => void;
+  /** Omit for a view-only habitat (no plus buttons; pets are not tappable). */
+  onAdd?: (zone: Habitat) => void;
 };
 
 /**
  * Background is assets/habitat/scene.png. Lanes sit on the open sky, the meadow, and the pond.
  */
 export function HabitatScene({ pets, onAdd }: Props) {
-  const insets = useSafeAreaInsets();
-
   return (
     <View style={styles.scene}>
       <Image source={SCENE} style={styles.art} resizeMode="cover" fadeDuration={0} />
 
-      <Lane style={styles.skyLane}>{(box) => pet(pets.sky, 'sky', box, SKY_PET, false)}</Lane>
-      <Lane style={styles.landLane}>{(box) => pet(pets.earth, 'earth', box, LAND_PET, true)}</Lane>
-      <Lane style={styles.waterLane}>{(box) => pet(pets.water, 'water', box, WATER_PET, false)}</Lane>
+      <Lane style={styles.skyLane}>{(box) => pet(pets.sky, 'sky', box, SKY_PET, false, onAdd)}</Lane>
+      <Lane style={styles.landLane}>{(box) => pet(pets.earth, 'earth', box, LAND_PET, true, onAdd)}</Lane>
+      <Lane style={styles.waterLane}>{(box) => pet(pets.water, 'water', box, WATER_PET, false, onAdd)}</Lane>
 
-      <AddButton zone="sky" filled={!!pets.sky} style={[styles.skyPlus, { top: insets.top + 8 }]} onPress={() => onAdd('sky')} />
-      <AddButton zone="earth" filled={!!pets.earth} style={styles.landPlus} onPress={() => onAdd('earth')} />
-      <AddButton zone="water" filled={!!pets.water} style={styles.waterPlus} onPress={() => onAdd('water')} />
+      {onAdd && !pets.sky && (
+        <View pointerEvents="box-none" style={styles.skyPlus}>
+          <AddButton zone="sky" onPress={() => onAdd('sky')} />
+        </View>
+      )}
+      {onAdd && !pets.earth && (
+        <View pointerEvents="box-none" style={styles.landPlus}>
+          <AddButton zone="earth" onPress={() => onAdd('earth')} />
+        </View>
+      )}
+      {onAdd && !pets.water && (
+        <View pointerEvents="box-none" style={styles.waterPlus}>
+          <AddButton zone="water" onPress={() => onAdd('water')} />
+        </View>
+      )}
     </View>
   );
 }
 
-function pet(info: Pet | undefined, zone: Habitat, box: { width: number; height: number }, size: number, grounded: boolean) {
+function pet(
+  info: Pet | undefined,
+  zone: Habitat,
+  box: { width: number; height: number },
+  size: number,
+  grounded: boolean,
+  onAdd: ((zone: Habitat) => void) | undefined,
+) {
   if (!info) return null;
   return (
     <RoamingPet
@@ -49,6 +66,7 @@ function pet(info: Pet | undefined, zone: Habitat, box: { width: number; height:
       height={box.height}
       size={size}
       grounded={grounded}
+      onPress={onAdd ? () => onAdd(zone) : undefined}
     />
   );
 }
@@ -69,24 +87,14 @@ function Lane({ style, children }: { style: StyleProp<ViewStyle>; children: (box
   );
 }
 
-function AddButton({
-  zone,
-  filled,
-  style,
-  onPress,
-}: {
-  zone: Habitat;
-  filled: boolean;
-  style: StyleProp<ViewStyle>;
-  onPress: () => void;
-}) {
+function AddButton({ zone, onPress }: { zone: Habitat; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={filled ? `Change the ${zone} pet` : `Add a pet to the ${zone}`}
+      accessibilityLabel={`Add a pet to the ${zone}`}
       onPress={onPress}
       hitSlop={8}
-      style={({ pressed }) => [styles.plus, style, pressed && styles.plusPressed]}
+      style={({ pressed }) => [styles.plus, pressed && styles.plusPressed]}
     >
       <PixelIcon name="plus" size={16} color="#10131C" />
     </Pressable>
@@ -98,12 +106,22 @@ const styles = StyleSheet.create({
   art: { ...StyleSheet.absoluteFill, width: '100%', height: '100%', zIndex: 0 },
   lane: { position: 'absolute', zIndex: 2 },
   skyLane: { left: '8%', width: '72%', top: '14%', height: '22%' },
-  landLane: { left: '16%', width: '68%', top: '60%', marginTop: -LAND_PET, height: LAND_PET },
+  landLane: { left: '16%', width: '68%', top: '56%', marginTop: -LAND_PET, height: LAND_PET },
   waterLane: { left: '22%', width: '56%', top: '74%', height: '14%' },
-  // The app's button style: rounded yellow with an ink outline and a hard shadow that presses down.
-  plus: {
+  skyPlus: { position: 'absolute', zIndex: 3, left: 0, right: 0, top: '14%', height: '22%', alignItems: 'center', justifyContent: 'center' },
+  landPlus: {
     position: 'absolute',
     zIndex: 3,
+    left: 0,
+    right: 0,
+    top: '56%',
+    marginTop: -LAND_PET,
+    height: LAND_PET,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterPlus: { position: 'absolute', zIndex: 3, left: 0, right: 0, top: '74%', height: '14%', alignItems: 'center', justifyContent: 'center' },
+  plus: {
     width: 40,
     height: 40,
     borderRadius: 12,
@@ -115,7 +133,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   plusPressed: { transform: [{ translateY: 2 }], boxShadow: '0px 1px 0px #10131C' },
-  skyPlus: { right: 10 },
-  landPlus: { top: '52%', right: 10 },
-  waterPlus: { top: '78%', right: 10 },
 });
