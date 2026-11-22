@@ -140,7 +140,7 @@ export default function RevealPlayground() {
           <ChipRow>
             <Chip label="🎲 Random pull" active onPress={randomPull} />
             <Chip label="↻ Replay" active onPress={replay} />
-            <Chip label="Gold" active={isGold} onPress={() => setGold((v) => !v)} />
+            <Chip label="🌈 Rainbow" active={isGold} onPress={() => setGold((v) => !v)} />
             <Chip
               label={soundOn ? '🔊 Sound on' : '🔇 Sound off'}
               active={soundOn}

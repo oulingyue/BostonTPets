@@ -1,6 +1,7 @@
-import { Silkscreen_400Regular, Silkscreen_700Bold, useFonts } from '@expo-google-fonts/silkscreen';
+import { PixelifySans_500Medium, PixelifySans_700Bold, useFonts } from '@expo-google-fonts/pixelify-sans';
 import { GOLD_COLOR, LINE_INFO, type Line, type Rarity } from '@game/catalog';
 import { EXP_TO_NEXT, LEVEL_CAP, pullProgress, type LevelState } from '@game/leveling';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -30,6 +31,7 @@ import { haptics } from '@/lib/haptics';
 import { playSfx, preloadSfx, TIER_SFX } from '@/lib/sfx';
 import { ExpBar } from '../ExpBar';
 import { LivePet } from '../LivePet';
+import { RAINBOW, RainbowTag } from '../Rainbow';
 import { Stars } from '../Stars';
 import { PixelSprite } from './PixelSprite';
 import {
@@ -62,7 +64,7 @@ export type RevealPet = {
   /** Shown until the creature has art. */
   emoji: string;
   rarity: PullRarity;
-  /** Gold pulls (1%) get a GOLD badge next to the name and gold sparkles. */
+  /** The rainbow variant (1%, stored as is_gold): the pet cycles through the rainbow and gets a RAINBOW badge. */
   isGold?: boolean;
 };
 
@@ -109,8 +111,20 @@ const C = {
 
 const LED_COUNT = 12;
 const SPARKLE_COUNT = 6;
-const RAY_COUNT = 6; // each ray bar crosses the center, so 6 bars make 12 rays
+const RAY_COUNT = 8; // each ray bar crosses the center, so 8 bars make 16 rays
 const CONFETTI_COUNT = 30;
+
+/** Hype words that float around legendary and rainbow pets, with where each sits (in pet sizes from the pet). */
+const HYPE_WORDS: readonly { text: string; dx: number; dy: number }[] = [
+  { text: 'Wow!', dx: -1.0, dy: -0.62 },
+  { text: 'So cool!', dx: 0.95, dy: -0.7 },
+  { text: 'Ultra rare!', dx: -1.02, dy: 0.18 },
+  { text: 'OMG!', dx: 1.05, dy: 0.1 },
+  { text: "That's sick!", dx: 0.0, dy: -1.38 },
+  { text: 'No way!', dx: 0.98, dy: 0.62 },
+  { text: 'Amazing!', dx: -0.95, dy: 0.66 },
+];
+const HYPE_CYCLE_MS = 3600;
 
 type Impact = {
   /** Peak opacity of the station flash, and how many times it flashes. */
@@ -190,12 +204,12 @@ let hasSeenFullReveal = false;
  *   5. for duplicates, the EXP bar fills; each full bar is a level-up (banner, rising arrows, a new star).
  * The whole sequence scales with rarity (see IMPACT): commons are gentle; legendaries black out the
  * station, strobe, shake, flash white at the doors, and land with rays, confetti, and a "LEGENDARY!" slam.
- * Gold pulls get a GOLD badge and gold sparkles.
+ * Rainbow pulls cycle through the rainbow, with rainbow rays and a RAINBOW badge. Only legendaries sparkle.
  */
 export function PullReveal({ pet, line, stationName, copies, isNew, onDone, timeScale = 1 }: Props) {
   const reduceMotion = useReducedMotion();
   const screen = useWindowDimensions();
-  const [fontsLoaded] = useFonts({ Silkscreen_400Regular, Silkscreen_700Bold });
+  const [fontsLoaded] = useFonts({ PixelifySans_500Medium, PixelifySans_700Bold });
   const pixelFont = fontsLoaded ? styles.pixelFont : null;
   const pixelFontBold = fontsLoaded ? styles.pixelFontBold : null;
 
@@ -204,12 +218,12 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
   const isLegendary = pet.rarity === 'legendary';
   const isGold = pet.isGold === true;
   const impact = IMPACT[pet.rarity];
-  const hasSparkles = isGold || pet.rarity === 'epic' || isLegendary;
-  const raysColor = isGold ? GOLD_COLOR : rarityColor;
+  const hasSparkles = isLegendary;
+  const showHype = isLegendary || isGold;
   const vehicle = line === 'silver' ? BUS : TRAIN;
   const palette = useMemo(() => vehiclePalette(lineInfo.color), [lineInfo.color]);
   const cardColors = useMemo(() => cardPalette(lineInfo.color), [lineInfo.color]);
-  const sparkleColors = useMemo(() => sparklePalette(isGold ? GOLD_COLOR : RARITY_COLOR.legendary), [isGold]);
+  const sparkleColors = useMemo(() => sparklePalette(RARITY_COLOR.legendary), []);
 
   const steps = useMemo(() => TIERS.slice(0, TIERS.indexOf(pet.rarity) + 1).map((t) => RARITY_COLOR[t]), [pet.rarity]);
   // level 0 = lights off, level i = steps[i - 1]
@@ -237,7 +251,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
   const readerTop = Math.min(H - 16 * P - 8, platformTop + 6 * P) - 10 * P; // post foot on the platform
 
   const particles = useMemo<ParticleSpec[]>(() => {
-    const colors = [rarityColor, lineInfo.color, '#FFFFFF', isGold ? GOLD_COLOR : C.doorGlow];
+    const colors: readonly string[] = isGold ? RAINBOW : [rarityColor, lineInfo.color, '#FFFFFF', C.doorGlow];
     const count = impact.particles;
     return Array.from({ length: count }, (_, i) => ({
       angle: (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4,
@@ -318,6 +332,8 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
   const confettiFall = useSharedValue(0);
   const slam = useSharedValue(0);
   const zoom = useSharedValue(0);
+  const hypeOn = useSharedValue(0); // hype words: fades the whole group in
+  const hype = useSharedValue(0); // hype words: looping 0..1, each word fades in and out at its own point
 
   const [finished, setFinished] = useState(false);
   const canSkip = useRef(hasSeenFullReveal).current;
@@ -368,9 +384,15 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
     confettiFall.value = 1;
     slam.value = 0;
     zoom.value = 0;
+    if (showHype && !reduceMotion) startHype();
     startTwinkle();
     if (impact.rays > 0 && !reduceMotion) startRaysSpin();
     markFinished();
+  };
+
+  const startHype = () => {
+    hypeOn.value = withTiming(1, { duration: 300 });
+    hype.value = withRepeat(withTiming(1, { duration: HYPE_CYCLE_MS, easing: Easing.linear }), -1);
   };
 
   const startRaysSpin = () => {
@@ -379,7 +401,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
 
   useEffect(() => {
     const announce = () =>
-      AccessibilityInfo.announceForAccessibility(`${pet.name}${isGold ? ', gold' : ''}, ${RARITY_LABEL[pet.rarity]}`);
+      AccessibilityInfo.announceForAccessibility(`${pet.name}${isGold ? ', rainbow' : ''}, ${RARITY_LABEL[pet.rarity]}`);
     preloadSfx();
     if (reduceMotion) {
       showFinalState();
@@ -503,6 +525,7 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
         haptics.heavy();
       }
       if (impact.confetti) confettiFall.value = timing(1, { duration: 2800, easing: Easing.linear });
+      if (showHype) at(isLegendary ? 1300 : 250, startHype); // after the slam text clears
       announce();
     });
     t += T.settle;
@@ -761,27 +784,36 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
               raysStyle,
             ]}
           >
-            {Array.from({ length: RAY_COUNT }, (_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.abs,
-                  {
-                    left: petSize * 1.3 - petSize * 0.11,
-                    top: 0,
-                    width: petSize * 0.22,
-                    height: petSize * 2.6,
-                    backgroundColor: raysColor,
-                    opacity: i % 2 ? 0.55 : 1,
-                    transform: [{ rotate: `${(i * 180) / RAY_COUNT}deg` }],
-                  },
-                ]}
-              />
-            ))}
+            {Array.from({ length: RAY_COUNT }, (_, i) => {
+              // Each ray is brightest at the pet and fades to nothing at both tips, so the burst has no hard ends.
+              const c = isGold ? RAINBOW[i % RAINBOW.length] : rarityColor;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.abs,
+                    {
+                      left: petSize * 1.3 - petSize * 0.08,
+                      top: 0,
+                      width: petSize * 0.16,
+                      height: petSize * 2.6,
+                      opacity: i % 2 ? 0.6 : 1,
+                      transform: [{ rotate: `${(i * 180) / RAY_COUNT}deg` }],
+                    },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={[`${c}00`, `${c}99`, c, `${c}99`, `${c}00`] as const}
+                    locations={[0, 0.28, 0.5, 0.72, 1]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+              );
+            })}
           </Animated.View>
         )}
 
-        {/* The pet, its shadow, and sparkles for epics, legendaries and gold */}
+        {/* The pet, its shadow, and sparkles (legendaries only) */}
         <Animated.View style={[styles.abs, { left: pet0.x - 5 * P, top: petFeetY - Math.round(petSize * 0.12) - 2 * P }, shadowStyle]}>
           <PixelSprite rows={SHADOW} palette={SHADOW_PALETTE} pixel={P} />
         </Animated.View>
@@ -810,13 +842,29 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
         <Animated.View
           style={[styles.abs, { left: pet0.x - petSize / 2, top: pet0.y - petSize / 2, transformOrigin: 'center bottom' }, petStyle]}
         >
-          <LivePet id={pet.id} name={pet.name} emoji={pet.emoji} size={petSize} active={finished} />
+          <LivePet id={pet.id} name={pet.name} emoji={pet.emoji} size={petSize} active={finished} rainbow={isGold} />
         </Animated.View>
 
         {/* Legendary confetti */}
         {confetti.map((c, i) => (
           <ConfettiPiece key={i} fall={confettiFall} height={H} {...c} />
         ))}
+
+        {/* Legendary and rainbow: hype words fade in and out around the pet */}
+        {showHype &&
+          HYPE_WORDS.map((w, i) => (
+            <HypeWord
+              key={w.text}
+              text={w.text}
+              x={Math.min(W - HYPE_W / 2 - 4, Math.max(HYPE_W / 2 + 4, pet0.x + w.dx * petSize))} // stay on screen
+              y={pet0.y + w.dy * petSize}
+              phase={i / HYPE_WORDS.length}
+              color={isGold ? RAINBOW[i % RAINBOW.length] : i % 2 ? '#FFF2B8' : '#FFD84D'}
+              cycle={hype}
+              on={hypeOn}
+              fontStyle={pixelFontBold}
+            />
+          ))}
 
         {/* "EPIC!" / "LEGENDARY!" slammed over the pet */}
         {impact.slam && (
@@ -885,8 +933,8 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
                 {pet.name}
               </Text>
               {isGold && (
-                <Animated.View style={[styles.goldBadge, stampStyle]}>
-                  <Text style={[styles.goldBadgeText, pixelFontBold]}>GOLD</Text>
+                <Animated.View style={stampStyle}>
+                  <RainbowTag fontStyle={pixelFontBold} />
                 </Animated.View>
               )}
             </View>
@@ -1017,6 +1065,38 @@ function LevelArrow({ burst, x, y, rise, start, pixel }: ArrowProps) {
   );
 }
 
+type HypeProps = {
+  text: string;
+  x: number;
+  y: number;
+  phase: number;
+  color: string;
+  cycle: SharedValue<number>;
+  on: SharedValue<number>;
+  fontStyle: TextStyle | null;
+};
+
+const HYPE_W = 130;
+
+/** One hype word: pops in, drifts up a little, and fades out, once per cycle at its own phase. */
+function HypeWord({ text, x, y, phase, color, cycle, on, fontStyle }: HypeProps) {
+  const style = useAnimatedStyle(() => {
+    const p = (cycle.value + phase) % 1; // where this word is in its own loop
+    const fadeIn = Math.min(1, p / 0.12);
+    const fadeOut = p < 0.45 ? 1 : Math.max(0, 1 - (p - 0.45) / 0.15);
+    const visible = p < 0.6 ? fadeIn * fadeOut : 0;
+    return {
+      opacity: on.value * visible,
+      transform: [{ translateY: -p * 22 }, { scale: 0.7 + 0.3 * Math.min(1, p / 0.12) }, { rotate: `${(phase - 0.5) * 16}deg` }],
+    };
+  });
+  return (
+    <Animated.View style={[styles.abs, styles.noTouch, { left: x - HYPE_W / 2, top: y - 12, width: HYPE_W, alignItems: 'center' }, style]}>
+      <OutlinedText text={text} style={[styles.hypeText, fontStyle, { color }]} />
+    </Animated.View>
+  );
+}
+
 const OUTLINE_OFFSETS = [
   [-3, 0],
   [3, 0],
@@ -1050,6 +1130,7 @@ const styles = StyleSheet.create({
   banner: { left: 0, right: 0, alignItems: 'center' },
   bannerText: { fontSize: 30, fontWeight: '900', color: '#FFD84D', letterSpacing: 2 },
   slamText: { fontWeight: '900', letterSpacing: 2 },
+  hypeText: { fontSize: 17, fontWeight: '900', letterSpacing: 0.5 },
   fill: { left: 0, right: 0, top: 0, bottom: 0 },
   outline: { position: 'absolute', color: C.ink },
   expRow: { alignSelf: 'stretch' },
@@ -1057,8 +1138,8 @@ const styles = StyleSheet.create({
   scene: { flex: 1, overflow: 'hidden' },
   abs: { position: 'absolute' },
   noTouch: { pointerEvents: 'none' },
-  pixelFont: { fontFamily: 'Silkscreen_400Regular', fontWeight: 'normal' },
-  pixelFontBold: { fontFamily: 'Silkscreen_700Bold', fontWeight: 'normal' },
+  pixelFont: { fontFamily: 'PixelifySans_500Medium', fontWeight: 'normal' },
+  pixelFontBold: { fontFamily: 'PixelifySans_700Bold', fontWeight: 'normal' },
 
   signWrap: { top: 18, left: 0, right: 0, alignItems: 'center', gap: 12 },
   sign: {
@@ -1096,8 +1177,6 @@ const styles = StyleSheet.create({
   rarityText: { fontSize: 12, fontWeight: '800', letterSpacing: 2 },
   name: { fontSize: 22, fontWeight: '800', color: C.ink, textAlign: 'center', flexShrink: 1 },
   nameRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  goldBadge: { backgroundColor: GOLD_COLOR, borderWidth: 3, borderColor: C.ink, paddingHorizontal: 8, paddingVertical: 2 },
-  goldBadgeText: { color: C.ink, fontSize: 13, fontWeight: '900', letterSpacing: 2 },
   button: { marginTop: 4, backgroundColor: C.ink, paddingHorizontal: 28, paddingVertical: 12 },
   buttonPressed: { transform: [{ translateY: 2 }] },
   buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15, letterSpacing: 2 },
