@@ -97,7 +97,7 @@ The reveal, level-ups, tapping your pet, and opening pets in the collection all 
 
 Creatures show their emoji until they have art. The style is cute 16-bit pixel art.
 
-Every pet is drawn in code by `scripts/pixel-pets/generate.mjs`: each is a 32×32 sprite built from shapes (birds, sitting critters, and fish share templates), with shading, outlines, and a blink frame. Edit a pet there and run `npm run pets` to regenerate its PNGs and `src/lib/pixelPetArt.ts`. To replace a pet with hand-made art instead:
+Every pet is drawn in code by `scripts/pixel-pets/generate.mjs`: each is its own design (its own pose and shapes), rendered as a 32×32 sprite with shading, dark outlines, and a blink frame. Edit a pet there and run `npm run pets` to regenerate its PNGs and `src/lib/pixelPetArt.ts`. `npm run pets -- --proposed` also writes the two styles we compared (this one and a 48×48 softer style) to `assets/proposed/`. To replace a pet with hand-made art instead:
 
 1. Save a square PNG with a transparent background as `assets/pets/<id>.png`. The id is the creature's id in `catalog.ts`, such as `lobster` or `mit_beaver`.
 2. Add it to `HAND_MADE` in `src/lib/petArt.ts`, which overrides the generated art. The app then shows it everywhere: collection, history, and the pull reveal.
