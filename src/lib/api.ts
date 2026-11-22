@@ -99,7 +99,7 @@ export type LeaderboardEntry = {
 
 /**
  * `entries` is the top 50. `me` is the caller's own row, whether or not it's in `entries`; null when
- * the caller isn't on that board (no points yet on Global, or a demo account).
+ * the caller isn't on that board (no points yet on Global).
  * Rules: DESIGN.md "Leaderboards" and the leaderboard SQL function.
  */
 export type Leaderboard = { entries: LeaderboardEntry[]; me: LeaderboardEntry | null };
