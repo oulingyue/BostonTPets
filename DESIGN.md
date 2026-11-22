@@ -165,7 +165,7 @@ Each band holds **one** pet the player owns:
 - **Water:** swimmers, including ducks, geese, swans, the penguin, the seal, the turtle, and the frog.
 - **Earth:** walkers, including the wild turkey.
 
-A plus on an empty band opens that zone's pets. Picking a different pet replaces the one in the band. The plus stays after a pet is placed so the player can swap or clear it. Tapping the pet in the scene only plays the hop. Rows live in `habitat_pets` (`20261121210000_habitat.sql`); the zone of each `pet_id` is `HABITAT_OF` in `catalog.ts`.
+A plus on an empty band opens that zone's pets. After a pet is placed, tap it to swap or unequip; the plus is gone until the band is empty again. Rows live in `habitat_pets` (`20261121210000_habitat.sql`); the zone of each `pet_id` is `HABITAT_OF` in `catalog.ts`.
 
 **Equip** is the same system: at most one pet in **air** (sky), **land** (earth), and **water**. Equip from the habitat home, the habitat picker, or a pet's sheet in Collection / Profile (`set_habitat_pet`). Equipped pets earn **passive EXP** stored on `user_pets.bonus_exp` (`20261122200000_passive_exp.sql`): **20 EXP/day** while equipped (~5 days for the first 100 EXP bar), synced when pets load or the app comes to the foreground. Offline accrual is capped at **7 days**. Passive EXP counts toward the same level bars as duplicate EXP (`leveling.ts`); it does not affect leaderboard points.
 

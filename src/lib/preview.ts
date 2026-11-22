@@ -234,6 +234,15 @@ type SampleUser = {
   avatar_pet_id?: string | null;
 };
 
+function habitatForPets(list: PublicPet[]): HabitatSlot[] {
+  const slots: HabitatSlot[] = [];
+  for (const zone of ['sky', 'earth', 'water'] as const) {
+    const row = list.find((p) => getPet(p.pet_id)?.habitat === zone);
+    if (row) slots.push({ zone, pet_id: row.pet_id });
+  }
+  return slots;
+}
+
 function samplePets(list: [petId: string, copies: number, isGold?: boolean][]): PublicPet[] {
   return list.map(([pet_id, copies, isGold], i) => ({
     pet_id,
@@ -336,6 +345,13 @@ export const previewSocial = {
       stats: { total_scans: u.total_scans, lines_visited: linesOf(u.pets), points: pointsForPets(u.pets) },
       pets: u.pets.map((p) => ({ ...p })),
     };
+  },
+  async habitat(handle: string): Promise<HabitatSlot[]> {
+    await delay();
+    if (handle === ME_HANDLE) return habitat.map((slot) => ({ ...slot }));
+    const u = users.find((x) => x.handle === handle);
+    if (!u) return [];
+    return habitatForPets(u.pets);
   },
   async follows(handle: string, kind: FollowKind): Promise<UserSummary[]> {
     await delay();

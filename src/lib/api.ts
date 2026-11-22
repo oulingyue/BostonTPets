@@ -125,6 +125,7 @@ export async function submitScan(payload: string): Promise<ScanResponse> {
 //   action             params                              returns
 //   search             { query }                           UserSummary[]   (display name contains query, any case, 3+ chars, max 20, excludes caller)
 //   profile            { handle }                          PublicProfile | null
+//   habitat            { handle }                          HabitatSlot[]
 //   follows            { handle, kind }                    UserSummary[]
 //   counts             {}                                  FollowCounts    (the caller's own)
 //   follow / unfollow  { userId }                          { ok: true }
@@ -176,6 +177,12 @@ export async function searchUsers(query: string): Promise<UserSummary[]> {
 export async function fetchPublicProfile(handle: string): Promise<PublicProfile | null> {
   if (IS_PREVIEW) return previewSocial.profile(handle);
   return invokeSocial({ action: 'profile', handle });
+}
+
+/** Equipped pets in another rider's habitat (sky, earth, water). */
+export async function fetchUserHabitat(handle: string): Promise<HabitatSlot[]> {
+  if (IS_PREVIEW) return previewSocial.habitat(handle);
+  return invokeSocial({ action: 'habitat', handle });
 }
 
 export async function fetchFollows(handle: string, kind: FollowKind): Promise<UserSummary[]> {
