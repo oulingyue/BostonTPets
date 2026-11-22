@@ -41,7 +41,7 @@ export function Avatar({ name, seed, size = 44 }: { name: string; seed: string; 
       ]}
       accessible={false}
     >
-      <Text style={{ color: TEXT_ON[line], fontSize: size * 0.32, fontFamily: fonts.pixelBold }}>{initials(name)}</Text>
+      <Text style={{ color: TEXT_ON[line], fontSize: size * 0.36, fontFamily: fonts.heavy }}>{initials(name)}</Text>
     </View>
   );
 }

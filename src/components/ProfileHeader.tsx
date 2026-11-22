@@ -142,7 +142,7 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     identity: { alignItems: 'center', gap: 4, paddingTop: spacing.sm },
     avatarHint: { fontFamily: fonts.heavy, fontSize: 12, color: c.link, textAlign: 'center', marginTop: 6 },
-    name: { marginTop: spacing.sm, fontFamily: fonts.pixelBold, fontSize: 22, letterSpacing: 1, color: c.text },
+    name: { marginTop: spacing.sm, fontFamily: fonts.heavy, fontSize: 24, color: c.text },
     handleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     handle: { fontFamily: fonts.bold, fontSize: 15, color: c.muted },
     followsYou: {

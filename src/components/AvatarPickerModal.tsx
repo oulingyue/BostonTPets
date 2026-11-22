@@ -102,6 +102,6 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    initialsText: { fontFamily: fonts.pixelBold, color: '#fff', fontSize: 18 },
+    initialsText: { fontFamily: fonts.heavy, color: '#fff', fontSize: 20 },
     label: { fontFamily: fonts.heavy, fontSize: 11, color: c.text, textAlign: 'center', marginTop: 6 },
   });

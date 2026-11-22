@@ -13,6 +13,8 @@ const ICON: Record<string, PixelIconName> = {
 };
 
 const SCAN_SIZE = 60;
+/** Radius of the bar's top corners. */
+const CORNER = 20;
 
 /**
  * Navy tab bar with rounded top corners and pixel icons. Scan is the raised square yellow button
@@ -21,9 +23,12 @@ const SCAN_SIZE = 60;
 export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  // On the habitat the bar overlaps the scene a little, so the picture (not the page color) fills the
+  // rounded corners.
+  const overScene = state.routes[state.index]?.name === 'index';
 
   return (
-    <View style={styles.wrap}>
+    <View style={overScene ? styles.wrapOverScene : styles.wrap}>
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -81,11 +86,12 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     // The rounded corners show the screen background behind them.
     wrap: { backgroundColor: c.background },
+    wrapOverScene: { backgroundColor: 'transparent', marginTop: -CORNER },
     bar: {
       flexDirection: 'row',
       backgroundColor: c.sign,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      borderTopLeftRadius: CORNER,
+      borderTopRightRadius: CORNER,
       paddingTop: 10,
       paddingHorizontal: 4,
     },
