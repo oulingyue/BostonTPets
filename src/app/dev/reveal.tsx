@@ -174,7 +174,6 @@ export default function RevealPlayground() {
           stationName={DEMO_STATIONS[line]}
           copies={copies}
           isNew={copies === 1}
-          becameGold={isGold && copies > 1}
           points={points}
           onDone={replay}
           timeScale={timeScale}
