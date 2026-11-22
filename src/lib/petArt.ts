@@ -9,7 +9,8 @@
 import type { ImageSourcePropType } from 'react-native';
 import { PIXEL_PET_ART } from './pixelPetArt';
 
-export type PetArt = { base: ImageSourcePropType; blink?: ImageSourcePropType };
+/** `silhouette`: the pet's shape in translucent black, shown until it's found. Without one, a "?" shows instead. */
+export type PetArt = { base: ImageSourcePropType; blink?: ImageSourcePropType; silhouette?: ImageSourcePropType };
 
 /** Hand-made art. Overrides the generated pixel art for the same id. */
 const HAND_MADE: Partial<Record<string, PetArt>> = {};

@@ -37,3 +37,11 @@ test('pullProgress reports new pets, plain duplicates, level-ups, and maxed pets
   assert.equal(maxed.gained, 0);
   assert.equal(maxed.levelsGained, 0);
 });
+
+test('bonus EXP stacks on duplicate EXP for levels', () => {
+  assert.equal(levelFor(1, 'common', 75).exp, 75);
+  assert.equal(levelFor(2, 'common', 0).exp, 25);
+  const boosted = levelFor(2, 'common', 75);
+  assert.equal(boosted.level, 2);
+  assert.equal(boosted.exp, 0);
+});

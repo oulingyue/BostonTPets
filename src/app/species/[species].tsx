@@ -10,9 +10,11 @@ import { Stars } from '@/components/Stars';
 import { fetchMyPets } from '@/lib/api';
 import { playSfx } from '@/lib/sfx';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors, spacing } from '@/theme';
+import { cardStyle, fonts, spacing, usePalette, useStyles, type Palette } from '@/theme';
 
 export default function SpeciesDetail() {
+  const styles = useStyles(makeStyles);
+  const c = usePalette();
   // Temporary single-pet view. The route param is a pet_id. Collection layout belongs to the collection teammate.
   const { species } = useLocalSearchParams<{ species: string }>();
   const petId = Array.isArray(species) ? species[0] : species;
@@ -50,13 +52,13 @@ export default function SpeciesDetail() {
       <View style={styles.row}>
         <View style={{ flex: 1, gap: 2 }}>
           <View style={styles.nameRow}>
-            <Text style={[styles.petName, !owned && { color: colors.muted }]}>{info.name}</Text>
+            <Text style={[styles.petName, !owned && { color: c.muted }]}>{info.name}</Text>
             {owned?.is_gold && <RainbowTag size="sm" />}
           </View>
           {owned ? (
             <>
-              <Stars copies={owned.copies} level={levelFor(owned.copies, info.rarity).level} />
-              <ExpBarFor copies={owned.copies} rarity={info.rarity} />
+              <Stars copies={owned.copies} level={levelFor(owned.copies, info.rarity, owned.bonus_exp).level} />
+              <ExpBarFor copies={owned.copies} rarity={info.rarity} bonusExp={owned.bonus_exp} />
               <Text style={styles.meta}>
                 First caught{owned.first_station ? ` at ${owned.first_station}` : ''} ·{' '}
                 {new Date(owned.first_caught_at).toLocaleDateString()}
@@ -72,8 +74,9 @@ export default function SpeciesDetail() {
 }
 
 /** EXP toward the next level, from the duplicate count (rules in _shared/game/leveling.ts). */
-function ExpBarFor({ copies, rarity }: { copies: number; rarity: Rarity }) {
-  const lvl = levelFor(copies, rarity);
+function ExpBarFor({ copies, rarity, bonusExp }: { copies: number; rarity: Rarity; bonusExp: number }) {
+  const styles = useStyles(makeStyles);
+  const lvl = levelFor(copies, rarity, bonusExp);
   return (
     <View style={styles.exp}>
       <ExpBar
@@ -86,22 +89,16 @@ function ExpBarFor({ copies, rarity }: { copies: number; rarity: Rarity }) {
   );
 }
 
-const styles = StyleSheet.create({
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  exp: { maxWidth: 260, marginVertical: 4 },
-  container: { padding: spacing.md, gap: spacing.sm },
-  hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
-  rarity: { fontSize: 13, color: colors.muted, textTransform: 'uppercase', letterSpacing: 1 },
-  blurb: { fontSize: 15, color: colors.text, textAlign: 'center' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.md,
-  },
-  petName: { fontSize: 16, fontWeight: '700', color: colors.text },
-  meta: { fontSize: 12, color: colors.muted },
-  empty: { textAlign: 'center', padding: spacing.lg, color: colors.muted },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    exp: { maxWidth: 260, marginVertical: 4 },
+    container: { padding: spacing.md, gap: spacing.sm },
+    hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
+    rarity: { fontFamily: fonts.pixelBold, fontSize: 13, color: c.muted, letterSpacing: 1 },
+    blurb: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: c.text, textAlign: 'center' },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, ...cardStyle(c) },
+    petName: { fontFamily: fonts.heavy, fontSize: 16, color: c.text },
+    meta: { fontFamily: fonts.body, fontSize: 12, color: c.muted },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', padding: spacing.lg, color: c.muted },
+  });

@@ -1,6 +1,6 @@
 import { COMMON_COLOR, getPet, LINE_INFO } from '@game/catalog';
 import { StyleSheet, View } from 'react-native';
-import { colors } from '@/theme';
+import { usePalette } from '@/theme';
 import { PetSprite } from './PetSprite';
 import { RainbowStamp } from './Rainbow';
 
@@ -13,7 +13,8 @@ type Props = {
 };
 
 /**
- * Pet art on a circle: line color for a line-exclusive, neutral for a shared common.
+ * Pet art on a rounded tile: line color for a line-exclusive, neutral for a shared common, outlined like the
+ * rest of the pixel UI.
  * Art comes from src/lib/petArt.ts, keyed by pet id. Pets without art show their emoji.
  * Unowned pets show as a silhouette. Rainbow pets cycle through the rainbow and get a RAINBOW stamp.
  */
@@ -21,12 +22,26 @@ export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
   const pet = getPet(petId);
   const tint = pet?.line ? LINE_INFO[pet.line].color : COMMON_COLOR;
   const rainbow = owned && isGold;
+  const c = usePalette();
+  const outline = owned ? (c.scheme === 'dark' ? c.shadow : c.border) : c.lockedBorder;
   return (
     <View
       style={{ width: size, height: size }}
       accessibilityLabel={owned ? `${pet?.name ?? petId}${rainbow ? ', rainbow' : ''}` : 'Not found yet'}
     >
-      <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: owned ? tint : colors.locked }]}>
+      <View
+        style={[
+          styles.tile,
+          {
+            width: size,
+            height: size,
+            borderRadius: Math.round(size * 0.24),
+            backgroundColor: owned ? tint : c.locked,
+            borderColor: outline,
+            borderWidth: Math.max(2, Math.round(size / 22)),
+          },
+        ]}
+      >
         <PetSprite id={petId} emoji={pet?.emoji ?? '?'} size={size * 0.9} silhouette={!owned} rainbow={rainbow} />
       </View>
       {rainbow && <RainbowStamp size={size} />}
@@ -35,5 +50,5 @@ export function PetBadge({ petId, owned, isGold = false, size = 56 }: Props) {
 }
 
 const styles = StyleSheet.create({
-  circle: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  tile: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 });

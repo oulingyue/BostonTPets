@@ -61,6 +61,9 @@ export type Creature = {
   blurb: string;
 };
 
+export const HABITATS = ['sky', 'earth', 'water'] as const;
+export type Habitat = (typeof HABITATS)[number];
+
 export type Pet = {
   petId: string;
   name: string;
@@ -68,6 +71,8 @@ export type Pet = {
   rarity: Rarity;
   /** Null for a shared common. Set for a line-exclusive. */
   line: Line | null;
+  /** Where the pet is shown on the home habitat. */
+  habitat: Habitat;
   blurb: string;
 };
 
@@ -370,13 +375,76 @@ export const LINE_TABLE: Record<Line, LineTable> = {
   silver: { commons: COMMONS, ...LINE_CREATURES.silver },
 };
 
+/**
+ * One zone per pet. Flyers are sky, swimmers (including waterfowl) are water, walkers are earth.
+ * `set_habitat_pet` in supabase/migrations/20261121210000_habitat.sql mirrors these ids.
+ */
+const HABITAT_IDS: Record<Habitat, readonly string[]> = {
+  sky: [
+    'pigeon',
+    'red_tailed_hawk',
+    'northern_cardinal',
+    'bc_eagle',
+    'blue_jay',
+    'piping_plover',
+    'snowy_owl',
+    'peregrine_falcon',
+    'herring_gull',
+    'monarch_butterfly',
+  ],
+  earth: [
+    'wild_turkey',
+    'gray_squirrel',
+    'mit_beaver',
+    'raccoon',
+    'bu_terrier',
+    'boston_terrier',
+    'red_fox',
+    'northeastern_husky',
+    'wentworth_leopard',
+    'orange_tabby_cat',
+    'haymarket_rat',
+  ],
+  water: [
+    'mallard_duck',
+    'canada_goose',
+    'swan',
+    'lobster',
+    'alewife',
+    'snapping_turtle',
+    'bullfrog',
+    'humpback_whale',
+    'harbor_seal',
+    'penguin',
+    'atlantic_cod',
+    'horseshoe_crab',
+    'striped_bass',
+    'moon_jellyfish',
+  ],
+};
+
+export const HABITAT_OF: Record<string, Habitat> = Object.fromEntries(
+  HABITATS.flatMap((zone) => HABITAT_IDS[zone].map((id) => [id, zone])),
+);
+
+export function isHabitat(value: string): value is Habitat {
+  return (HABITATS as readonly string[]).includes(value);
+}
+
+export function habitatOf(petId: string): Habitat | undefined {
+  return HABITAT_OF[petId];
+}
+
 function basePet(creature: Creature, line: Line | null): Pet {
+  const habitat = HABITAT_OF[creature.id];
+  if (!habitat) throw new Error(`Pet ${creature.id} has no habitat`);
   return {
     petId: creature.id,
     name: creature.name,
     emoji: creature.emoji,
     rarity: creature.rarity,
     line,
+    habitat,
     blurb: creature.blurb,
   };
 }

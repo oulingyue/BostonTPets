@@ -2,47 +2,57 @@ import { getPet } from '@game/catalog';
 import { Link, router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AvatarPickerModal } from '@/components/AvatarPickerModal';
 import { PetBadge } from '@/components/PetBadge';
 import { RainbowTag } from '@/components/Rainbow';
 import { PetGrid } from '@/components/PetGrid';
 import { PetSheet } from '@/components/PetSheet';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { SegmentedControl } from '@/components/SegmentedControl';
+import { Button } from '@/components/ui/Button';
 import {
   fetchMyFollowCounts,
+  fetchHabitat,
   fetchMyPets,
   fetchProfile,
   fetchScanHistory,
   fetchStats,
+  setAvatarPet,
   type OwnedPet,
 } from '@/lib/api';
 import { signOut, useSession } from '@/lib/session';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors, spacing } from '@/theme';
+import { cardStyle, fonts, spacing, useStyles, type Palette } from '@/theme';
 
 type Tab = 'pets' | 'history';
 
 export default function ProfileScreen() {
+  const styles = useStyles(makeStyles);
   const { session } = useSession();
   const [tab, setTab] = useState<Tab>('pets');
   const [openPet, setOpenPet] = useState<OwnedPet | null>(null);
+  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const load = useCallback(async () => {
-    const [profile, stats, pets, history, counts] = await Promise.all([
+    const [profile, stats, pets, habitat, history, counts] = await Promise.all([
       fetchProfile(),
       fetchStats(),
       fetchMyPets(),
+      fetchHabitat(),
       fetchScanHistory(),
       // The social backend may not be deployed yet; the rest of the profile should still load.
       fetchMyFollowCounts().catch(() => ({ following: 0, followers: 0 })),
     ]);
-    return { profile, stats, pets, history, counts };
+    return { profile, stats, pets, habitat, history, counts };
   }, []);
   const { data, error, loading, refresh } = useFocusedData(load);
 
   if (!data && loading) return <ActivityIndicator style={{ flex: 1 }} />;
 
   const handle = data?.profile?.handle ?? null;
+  const equippedIds = new Set((data?.habitat ?? []).map((slot) => slot.pet_id));
+  const avatarPetId = data?.profile?.avatar_pet_id ?? null;
+  const avatarIsGold = (data?.pets ?? []).find((p) => p.pet_id === avatarPetId)?.is_gold ?? false;
 
   return (
     <>
@@ -63,19 +73,16 @@ export default function ProfileScreen() {
             following={data.counts.following}
             followers={data.counts.followers}
             badge={data.profile?.is_demo ? <Text style={styles.demo}>DEMO ACCOUNT</Text> : undefined}
+            avatarPetId={avatarPetId}
+            avatarIsGold={avatarIsGold}
+            onPressAvatar={() => setAvatarOpen(true)}
             onPressFollows={
               handle
                 ? (t) => router.push({ pathname: '/user/[handle]/follows', params: { handle, tab: t } })
                 : undefined
             }
             action={
-              <Pressable
-                style={({ pressed }) => [styles.addFriends, pressed && { opacity: 0.85 }]}
-                onPress={() => router.push('/friends/search')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.addFriendsText}>Add friends</Text>
-              </Pressable>
+              <Button title="Add friends" onPress={() => router.push('/friends/search')} />
             }
           />
         )}
@@ -128,37 +135,43 @@ export default function ProfileScreen() {
         </Link>
       </ScrollView>
 
-      <PetSheet pet={openPet} onClose={() => setOpenPet(null)} />
+      <PetSheet
+        pet={openPet}
+        onClose={() => setOpenPet(null)}
+        showEquip
+        equippedPetIds={equippedIds}
+        onEquipChange={refresh}
+      />
+      <AvatarPickerModal
+        visible={avatarOpen}
+        pets={data?.pets ?? []}
+        currentPetId={avatarPetId}
+        onClose={() => setAvatarOpen(false)}
+        onSelect={async (petId) => {
+          try {
+            await setAvatarPet(petId);
+            await refresh();
+          } catch (e) {
+            Alert.alert('Could not update photo', e instanceof Error ? e.message : String(e));
+          }
+        }}
+      />
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  historyNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  container: { padding: spacing.md, gap: spacing.md },
-  error: { color: colors.danger, textAlign: 'center' },
-  demo: { fontSize: 11, fontWeight: '800', color: colors.danger, letterSpacing: 1 },
-  addFriends: {
-    minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addFriendsText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-  privateNote: { fontSize: 12, color: colors.muted },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
-  historyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.sm,
-  },
-  historyPet: { fontSize: 15, fontWeight: '600', color: colors.text },
-  historyMeta: { fontSize: 12, color: colors.muted },
-  signOut: { alignItems: 'center', padding: spacing.lg },
-  signOutText: { color: colors.danger, fontWeight: '700', fontSize: 16 },
-  devLink: { textAlign: 'center', color: colors.muted, fontSize: 13, paddingBottom: spacing.lg },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    historyNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    container: { padding: spacing.md, gap: spacing.md },
+    error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center' },
+    demo: { fontFamily: fonts.pixelBold, fontSize: 11, color: c.danger, letterSpacing: 1 },
+    privateNote: { fontFamily: fonts.body, fontSize: 12, color: c.muted },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
+    historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm, ...cardStyle(c), borderRadius: 12 },
+    historyPet: { fontFamily: fonts.heavy, fontSize: 15, color: c.text },
+    historyMeta: { fontFamily: fonts.body, fontSize: 12, color: c.muted },
+    signOut: { alignItems: 'center', padding: spacing.lg },
+    signOutText: { fontFamily: fonts.heavy, color: c.danger, fontSize: 16 },
+    devLink: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, fontSize: 13, paddingBottom: spacing.lg },
+  });

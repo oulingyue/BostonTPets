@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 import { setFollowing } from '@/lib/api';
-import { colors } from '@/theme';
+import { fonts, hardShadow, useStyles, type Palette } from '@/theme';
 
 type Props = {
   userId: string;
@@ -16,6 +16,7 @@ type Props = {
 
 /** Follow / Following toggle. Updates optimistically and reverts if the request fails. */
 export function FollowButton({ userId, name, followed, followsYou = false, wide = false, onChange }: Props) {
+  const styles = useStyles(makeStyles);
   const [isFollowing, setIsFollowing] = useState(followed);
   const [busy, setBusy] = useState(false);
 
@@ -65,12 +66,22 @@ export function FollowButton({ userId, name, followed, followsYou = false, wide 
   );
 }
 
-const styles = StyleSheet.create({
-  pill: { minHeight: 36, minWidth: 100, paddingHorizontal: 12, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  wide: { minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  filled: { backgroundColor: colors.primary },
-  outlined: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: '#C9C4B9' },
-  text: { fontSize: 13, fontWeight: '700' },
-  filledText: { color: '#FFFFFF' },
-  outlinedText: { color: colors.text },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    pill: {
+      minHeight: 36,
+      minWidth: 100,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...hardShadow(c, 2),
+    },
+    wide: { minHeight: 46, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center', ...hardShadow(c) },
+    filled: { backgroundColor: c.accent, borderColor: c.scheme === 'dark' ? c.shadow : c.border },
+    outlined: { backgroundColor: c.surface, borderColor: c.border },
+    text: { fontFamily: fonts.heavy, fontSize: 13 },
+    filledText: { color: c.onAccent },
+    outlinedText: { color: c.text },
+  });

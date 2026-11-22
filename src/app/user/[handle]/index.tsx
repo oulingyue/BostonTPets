@@ -8,10 +8,11 @@ import { ProfileHeader } from '@/components/ProfileHeader';
 import { fetchPublicProfile, type PublicPet } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { useFocusedData } from '@/lib/useAsync';
-import { colors, spacing } from '@/theme';
+import { fonts, spacing, useStyles, type Palette } from '@/theme';
 
 /** Someone's public profile: no email, scan history or stations. */
 export default function UserProfile() {
+  const styles = useStyles(makeStyles);
   const { handle } = useLocalSearchParams<{ handle: string }>();
   const { session } = useSession();
   const [openPet, setOpenPet] = useState<PublicPet | null>(null);
@@ -51,6 +52,8 @@ export default function UserProfile() {
           handle={profile.handle}
           createdAt={profile.created_at}
           lastActiveAt={profile.last_active_at}
+          avatarPetId={profile.avatar_pet_id}
+          avatarIsGold={profile.avatar_is_gold}
           followsYou={!isMe && profile.follows_you}
           pets={profile.pets}
           stats={profile.stats}
@@ -87,10 +90,11 @@ export default function UserProfile() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md },
-  error: { color: colors.danger, textAlign: 'center' },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
-  section: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: spacing.xs },
-  privateNote: { fontSize: 12, color: colors.muted, textAlign: 'center' },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: spacing.md, gap: spacing.md },
+    error: { fontFamily: fonts.bold, color: c.danger, textAlign: 'center' },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
+    section: { fontFamily: fonts.pixelBold, fontSize: 16, letterSpacing: 1, color: c.text, marginTop: spacing.xs },
+    privateNote: { fontFamily: fonts.body, fontSize: 12, color: c.muted, textAlign: 'center' },
+  });

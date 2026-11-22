@@ -75,6 +75,8 @@ type Props = {
   stationName: string;
   copies: number;
   isNew: boolean;
+  /** Leaderboard points this pull earned. Omitted (no line shown) by a scan function that predates points. */
+  points?: { total: number; dailyBonus: number };
   onDone: () => void;
   /** Slows the whole sequence down (2 = half speed). For the reveal playground. */
   timeScale?: number;
@@ -206,7 +208,7 @@ let hasSeenFullReveal = false;
  * station, strobe, shake, flash white at the doors, and land with rays, confetti, and a "LEGENDARY!" slam.
  * Rainbow pulls cycle through the rainbow, with rainbow rays and a RAINBOW badge. Only legendaries sparkle.
  */
-export function PullReveal({ pet, line, stationName, copies, isNew, onDone, timeScale = 1 }: Props) {
+export function PullReveal({ pet, line, stationName, copies, isNew, points, onDone, timeScale = 1 }: Props) {
   const reduceMotion = useReducedMotion();
   const screen = useWindowDimensions();
   const [fontsLoaded] = useFonts({ PixelifySans_500Medium, PixelifySans_700Bold });
@@ -948,11 +950,18 @@ export function PullReveal({ pet, line, stationName, copies, isNew, onDone, time
                 fill={expFill}
                 detail={`${shown.exp} / ${shown.expToNext} EXP`}
                 fontStyle={pixelFont}
+                onLight
               />
               {progress.gained > 0 && (
                 <Animated.Text style={[styles.expPop, pixelFontBold, expPopStyle]}>+{progress.gained} EXP</Animated.Text>
               )}
             </View>
+            {points && points.total > 0 && (
+              <Text style={[styles.points, pixelFontBold]} accessibilityLabel={`Plus ${points.total} points`}>
+                +{points.total} PTS
+                {points.dailyBonus > 0 && <Text style={styles.pointsBonus}>{`  INCL. +${points.dailyBonus} DAILY`}</Text>}
+              </Text>
+            )}
             <Pressable
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed, !finished && styles.hidden]}
               onPress={onDone}
@@ -1134,6 +1143,8 @@ const styles = StyleSheet.create({
   fill: { left: 0, right: 0, top: 0, bottom: 0 },
   outline: { position: 'absolute', color: C.ink },
   expRow: { alignSelf: 'stretch' },
+  points: { marginTop: 8, color: '#16A34A', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  pointsBonus: { color: '#B45309', fontSize: 11 },
   expPop: { position: 'absolute', right: 0, top: -20, color: '#16A34A', fontSize: 14, fontWeight: '800' },
   scene: { flex: 1, overflow: 'hidden' },
   abs: { position: 'absolute' },

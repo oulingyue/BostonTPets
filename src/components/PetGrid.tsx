@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PetBadge } from '@/components/PetBadge';
 import { Stars } from '@/components/Stars';
 import type { PublicPet } from '@/lib/api';
-import { colors, spacing } from '@/theme';
+import { fonts, spacing, useStyles, type Palette } from '@/theme';
 
 const CATALOG_ORDER = Object.keys(CATALOG);
 
@@ -27,6 +27,7 @@ export function PetGrid<P extends PublicPet>({
   onPressPet: (pet: P) => void;
   emptyText: string;
 }) {
+  const styles = useStyles(makeStyles);
   if (pets.length === 0) return <Text style={styles.empty}>{emptyText}</Text>;
 
   return (
@@ -52,9 +53,10 @@ export function PetGrid<P extends PublicPet>({
   );
 }
 
-const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm },
-  tile: { width: '25%', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 2 },
-  name: { fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center', lineHeight: 14 },
-  empty: { textAlign: 'center', color: colors.muted, padding: spacing.lg },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm },
+    tile: { width: '25%', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 2 },
+    name: { fontFamily: fonts.heavy, fontSize: 11, color: c.text, textAlign: 'center', lineHeight: 14 },
+    empty: { fontFamily: fonts.bold, textAlign: 'center', color: c.muted, padding: spacing.lg },
+  });

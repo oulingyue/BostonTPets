@@ -1,7 +1,8 @@
 // POST /functions/v1/scan  { payload: "btp:<id>" }
 import { withSupabase } from 'npm:@supabase/server@1';
-import { isLine, ODDS, parseScanPayload } from '../_shared/game/catalog.ts';
+import { getPet, isLine, ODDS, parseScanPayload } from '../_shared/game/catalog.ts';
 import type { ScanRequest, ScanResponse } from '../_shared/game/api.ts';
+import { DAILY_BONUS, pullValues } from '../_shared/game/points.ts';
 import { rollPet, type PityState } from '../_shared/game/roll.ts';
 
 const reply = (body: ScanResponse) => Response.json(body);
@@ -13,6 +14,8 @@ type RecordedScan = {
   copies?: number;
   is_new?: boolean;
   became_gold?: boolean;
+  points?: number;
+  daily_bonus?: number;
 };
 
 export default {
@@ -57,6 +60,8 @@ export default {
         sinceLegendary: pityRow?.since_legendary ?? 0,
       };
       const roll = rollPet(code.line, { demo, pity });
+      // record_scan picks new vs duplicate and decides the daily bonus (rules in _shared/game/points.ts).
+      const values = pullValues(getPet(roll.petId)?.rarity ?? 'common', roll.isGold);
 
       const { data, error } = await admin.rpc('record_scan', {
         p_user_id: userId,
@@ -68,6 +73,9 @@ export default {
         p_expected_legendary: pity.sinceLegendary,
         p_since_epic_plus: roll.nextPity.sinceEpicPlus,
         p_since_legendary: roll.nextPity.sinceLegendary,
+        p_new_points: values.newPoints,
+        p_duplicate_points: values.duplicatePoints,
+        p_daily_bonus: DAILY_BONUS,
       });
       if (error || !data) return Response.json({ error: 'server_error' }, { status: 500 });
 
@@ -92,6 +100,7 @@ export default {
             copies: result.copies!,
             isNew: result.is_new!,
             becameGold: result.became_gold!,
+            points: { total: result.points ?? 0, dailyBonus: result.daily_bonus ?? 0 },
           });
       }
     }

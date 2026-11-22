@@ -1,5 +1,5 @@
 // Draws every pet as pixel art and writes the app's art. Run: npm run pets
-//   assets/pets/<id>.png and <id>-blink.png   every pet in APP_STYLE (old_style: 32x32, dark outlines)
+//   assets/pets/<id>.png, -blink.png, -silhouette.png   every pet in APP_STYLE (old_style: 32x32, dark outlines)
 //   src/lib/pixelPetArt.ts                    the app's map of that art
 // With --proposed it also writes both styles side by side for comparison, each with a _sheet.png:
 //   assets/proposed/old_style/   32x32, dark outlines, round eyes (the style the app uses)
@@ -886,6 +886,18 @@ function writePet(dir, id, style, cells, closed) {
   );
 }
 
+/**
+ * The pet's shape in translucent black, for pets the player hasn't found. It's a separate file rather than a
+ * tintColor because iOS can leave a recycled Image tinted after the tint is removed, darkening found pets.
+ */
+function writeSilhouette(dir, id, style, cells) {
+  const size = style.n * style.scale;
+  writeFileSync(
+    path.join(dir, `${id}-silhouette.png`),
+    png(size, size, (x, y) => (cells[Math.floor(y / style.scale)][Math.floor(x / style.scale)] ? [0, 0, 0, 71] : [0, 0, 0, 0])),
+  );
+}
+
 /** _sheet.png: every pet in roster order, 7 per row, on a light checkerboard. */
 function writeSheet(dir, style, sheet) {
   const cell = 4 * (48 / style.n); // so both styles' sheets come out the same size
@@ -916,10 +928,19 @@ function writeSheet(dir, style, sheet) {
   const style = STYLES[APP_STYLE];
   const dir = path.join(ROOT, 'assets', 'pets');
   mkdirSync(dir, { recursive: true });
-  for (const id of Object.keys(PETS)) for (const closed of [false, true]) writePet(dir, id, style, draw(style, id, closed), closed);
+  for (const id of Object.keys(PETS)) {
+    for (const closed of [false, true]) {
+      const cells = draw(style, id, closed);
+      writePet(dir, id, style, cells, closed);
+      if (!closed) writeSilhouette(dir, id, style, cells);
+    }
+  }
   const entries = Object.keys(PETS)
     .sort()
-    .map((id) => `  ${id}: { base: require('../../assets/pets/${id}.png'), blink: require('../../assets/pets/${id}-blink.png') },`);
+    .map(
+      (id) =>
+        `  ${id}: { base: require('../../assets/pets/${id}.png'), blink: require('../../assets/pets/${id}-blink.png'), silhouette: require('../../assets/pets/${id}-silhouette.png') },`,
+    );
   writeFileSync(
     path.join(ROOT, 'src', 'lib', 'pixelPetArt.ts'),
     [

@@ -4,7 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
 import { playSfx } from '@/lib/sfx';
-import { colors, rarityStyle, spacing } from '@/theme';
+import { fonts, hardShadow, radius, spacing, usePalette, useStyles, type Palette } from '@/theme';
 
 /**
  * Chance (in percent) that one normal scan rolls this exact pet, from the odds in catalog.ts.
@@ -17,6 +17,8 @@ export function scanChance(pet: Pet): number {
 
 /** Bottom sheet for a pet the player hasn't found yet: where to find it and how likely it is. Owned pets use PetSheet. */
 export function CreatureDetailModal({ petId, onClose }: { petId: string | null; onClose: () => void }) {
+  const styles = useStyles(makeStyles);
+  const c = usePalette();
   const insets = useSafeAreaInsets();
   const pet = petId ? getPet(petId) : undefined;
 
@@ -41,10 +43,10 @@ export function CreatureDetailModal({ petId, onClose }: { petId: string | null; 
                 ???
               </Text>
               <View style={styles.chips}>
-                <Text style={[styles.chip, { backgroundColor: rarityStyle[pet.rarity].bg, color: rarityStyle[pet.rarity].fg }]}>
+                <Text style={[styles.chip, { backgroundColor: c.rarity[pet.rarity].bg, color: c.rarity[pet.rarity].fg }]}>
                   {pet.rarity}
                 </Text>
-                <Text style={[styles.chip, { backgroundColor: '#F1EFEA', color: colors.text }]}>
+                <Text style={[styles.chip, styles.lineChip]}>
                   {pet.line ? (
                     <>
                       <Text style={{ color: LINE_INFO[pet.line].color }}>● </Text>
@@ -82,6 +84,7 @@ export function CreatureDetailModal({ petId, onClose }: { petId: string | null; 
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.fact}>
       <Text style={styles.factLabel}>{label}</Text>
@@ -90,35 +93,50 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: spacing.lg,
-    paddingTop: 10,
-    gap: 18,
-  },
-  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.locked },
-  hero: { alignItems: 'center', gap: 10 },
-  title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    overflow: 'hidden',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  facts: { backgroundColor: colors.background, borderRadius: 14, padding: 14, gap: 12 },
-  fact: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
-  factLabel: { fontSize: 14, color: colors.muted },
-  factValue: { fontSize: 14, fontWeight: '600', color: colors.text },
-  hint: { fontSize: 13, color: colors.muted, textAlign: 'center' },
-  done: { minHeight: 48, borderRadius: 12, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
-  doneText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(5,8,15,0.55)' },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      borderWidth: 2,
+      borderBottomWidth: 0,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingTop: 10,
+      gap: 18,
+    },
+    grabber: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: c.lockedBorder },
+    hero: { alignItems: 'center', gap: 10 },
+    title: { fontFamily: fonts.pixelBold, fontSize: 20, letterSpacing: 1, color: c.text, textAlign: 'center' },
+    chips: { flexDirection: 'row', gap: spacing.sm },
+    chip: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: c.scheme === 'dark' ? c.shadow : c.border,
+      overflow: 'hidden',
+      fontFamily: fonts.heavy,
+      fontSize: 12,
+      textTransform: 'capitalize',
+    },
+    lineChip: { backgroundColor: c.sunken, color: c.text },
+    facts: { backgroundColor: c.scheme === 'dark' ? c.sunken : c.background, borderRadius: radius.md, padding: 14, gap: 12 },
+    fact: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md },
+    factLabel: { fontFamily: fonts.body, fontSize: 14, color: c.muted },
+    factValue: { fontFamily: fonts.heavy, fontSize: 14, color: c.text },
+    hint: { fontFamily: fonts.body, fontSize: 13, color: c.muted, textAlign: 'center' },
+    done: {
+      minHeight: 48,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: c.scheme === 'dark' ? c.shadow : c.border,
+      backgroundColor: c.strong,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...hardShadow(c),
+    },
+    doneText: { fontFamily: fonts.heavy, color: c.onStrong, fontSize: 16 },
+  });

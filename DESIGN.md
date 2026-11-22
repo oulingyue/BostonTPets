@@ -133,7 +133,7 @@ Clients never choose outcomes. `scan` calls `record_scan` after a successful rol
 ## Duplicates and levels
 
 - First time you roll a `pet_id`: **new** slot, `copies = 1`, store `first_station` / `first_caught_at`.
-- Same `pet_id` again: **duplicate** — `copies += 1`, and the duplicate gives EXP: common 25, rare 50, epic 100, legendary 175. Levels need 100 / 150 / 200 / 250 EXP, up to ★5 (700 EXP). Level and EXP are derived from `copies` (`_shared/game/leveling.ts`), so nothing new is stored. Cosmetic only.
+- Same `pet_id` again: **duplicate** — `copies += 1`, and the duplicate gives EXP: common 25, rare 50, epic 100, legendary 175. Levels need 100 / 150 / 200 / 250 EXP, up to ★5 (700 EXP). Level and EXP come from duplicate EXP plus optional **`bonus_exp`** on equipped pets (`_shared/game/leveling.ts`). Cosmetic only.
 - The pull reveal fills the EXP bar; each full bar plays a level-up (banner, rising arrows, a new star) and carries the rest into the next level.
 - Gold on a duplicate still upgrades that slot (`is_gold` sticks).
 
@@ -153,7 +153,21 @@ Never create a second collection row for the same `pet_id`.
 
 ## Screens
 
-Tabs: **Collection**, **Scan** (center), **Profile**. Social screens open from Profile; there is no separate Friends tab.
+Tabs: **Habitat**, **Collection**, **Scan**, **Profile**. The app opens on Habitat. Social screens open from Profile; there is no separate Friends tab.
+
+### Habitat
+
+The first screen is one pixel scene, not three cards. Sky, earth, and water meet at a tree and a shore. The picture uses flat pastel blocks and small diamond sparkles, in the same cute sticker-pixel style as the pet art. Pets are the existing sprites.
+
+Each band holds **one** pet the player owns:
+
+- **Sky:** flying birds and the monarch butterfly.
+- **Water:** swimmers, including ducks, geese, swans, the penguin, the seal, the turtle, and the frog.
+- **Earth:** walkers, including the wild turkey.
+
+A plus on an empty band opens that zone's pets. Picking a different pet replaces the one in the band. The plus stays after a pet is placed so the player can swap or clear it. Tapping the pet in the scene only plays the hop. Rows live in `habitat_pets` (`20261121210000_habitat.sql`); the zone of each `pet_id` is `HABITAT_OF` in `catalog.ts`.
+
+**Equip** is the same system: at most one pet in **air** (sky), **land** (earth), and **water**. Equip from the habitat home, the habitat picker, or a pet's sheet in Collection / Profile (`set_habitat_pet`). Equipped pets earn **passive EXP** stored on `user_pets.bonus_exp` (`20261122200000_passive_exp.sql`): **20 EXP/day** while equipped (~5 days for the first 100 EXP bar), synced when pets load or the app comes to the foreground. Offline accrual is capped at **7 days**. Passive EXP counts toward the same level bars as duplicate EXP (`leveling.ts`); it does not affect leaderboard points.
 
 **MVP includes** following (search, follow, view other people's profiles and pets) and leaderboards. Following is built (app + `social` Edge Function + `follows` table). Leaderboards are spec only.
 
@@ -173,7 +187,7 @@ Camera + reticle; unmount when tab blurs.
 
 ### Profile
 
-Avatar, display name, @username, last active and joined date, Pets / Following / Followers counts, an **Add friends** button, stat tiles (collected, gold, scans, lines visited), then a **Pets | History** toggle. Pets is a grid of owned pets; History is the scan history (own profile only). Link to **leaderboards** (or a compact top-3 teaser). Sign out at the bottom.
+Avatar, display name, @username, last active and joined date, Pets / Following / Followers counts, an **Add friends** button, stat tiles (collected, gold, scans, points), then a **Pets | History** toggle. Pets is a grid of owned pets; History is the scan history (own profile only). Leaderboards have their own tab. Sign out at the bottom.
 
 - **Pet sheet:** tapping any pet opens a bottom sheet with its level (copies, capped at ★5, extras counted), first caught date and gold status. It never shows the station, because the same sheet is used on other people's profiles.
 - **Add friends:** search by display name (contains, case-insensitive, 3+ characters, up to 20 results; names that start with the query come first). Each result has a Follow button.
@@ -188,6 +202,7 @@ Avatar, display name, @username, last active and joined date, Pets / Following /
 - **Profiles are public** to every signed-in user: display name, username, last active, joined date, follow counts, stats and pets. Email, scan history and stations are never shown to anyone else, since stations reveal where someone rides.
 - **Usernames** are unique, lowercase, 3–20 characters of `a–z`, `0–9` and `_` (`src/lib/handle.ts`). They are chosen at sign-up, with a live availability check.
 - **Last active** is set by the backend when the app opens or comes to the foreground (`touch_last_active`), not taken from Supabase's last sign-in, which goes stale because the app keeps you signed in.
+- **Profile picture:** optional `profiles.avatar_pet_id` (must be owned). Shown on profile, search, follows, and leaderboard; otherwise initials (`set_avatar_pet` RPC).
 
 **Not in MVP:** trading/gifting pets, blocking, DMs, activity feed.
 
@@ -195,12 +210,39 @@ Avatar, display name, @username, last active and joined date, Pets / Following /
 
 ### Leaderboards (MVP)
 
-**Goals:** arcade-style ranking for the pitch — “who’s filling the dex fastest?”
+**Goals:** arcade-style ranking for the pitch, and a reason to ride (and scan) every day.
 
-**Boards** (all-time for hackathon MVP; no season reset required):
+A **Leaderboard** tab (Collection | Scan | Leaderboard | Profile; Scan is a normal tab icon now that there are four) with a **Global | Friends** toggle. One board, ranked by **points**. Collectors / gold / scans stay as profile stats rather than separate boards.
 
-| Board | Rank by |
-| --- | --- |
+**Points** (`_shared/game/points.ts`), earned by every scan:
+
+| | Common | Rare | Epic | Legendary |
+| --- | --- | --- | --- | --- |
+| New pet | 25 | 50 | 100 | 175 |
+| Duplicate (40%) | 10 | 20 | 40 | 70 |
+
+- **Gold ×2** on the rarity points (new or duplicate).
+- **+50 daily bonus** on your first scan of the day, added after the gold multiplier. A day is a calendar day in **Boston time** (midnight ET) for everyone.
+- New-pet values match the duplicate EXP scale on purpose: one set of numbers to learn.
+- Points are stored per scan (`scans.points`), so changing the numbers later doesn't rescore old scans.
+
+**Boards** (all-time; no season reset):
+
+- **Global:** every player with more than 0 points. Top **50**.
+- **Friends:** you plus everyone you follow (one-way, so it works before anyone follows you back), including people with 0 points.
+- **Demo accounts** (`is_demo`) are never ranked: their odds and lack of cooldowns would top every board.
+- Your own row is highlighted, and pinned below the list when you're outside the top 50. On Global with no points yet, the pin says "Scan a code to get on the board".
+- An **ⓘ** button at the top right of the header opens a closable sheet explaining the points rules (table, gold, daily bonus, who is on each board).
+- Rows: rank (medals for the top 3), avatar, name, @handle, pet count, points. Tapping a row opens that profile.
+- **Ties:** whoever reached the score first (earlier last scan), then earlier sign-up.
+
+**Elsewhere:** the pull reveal shows "+N PTS" (and "incl. +50 daily"); profiles have a **Points** stat tile; the reveal playground has a **Daily bonus** toggle.
+
+**API:** `player` resource `leaderboard` with `scope: 'global' | 'friends'` → `{ entries, me }`, backed by the service-role `leaderboard(p_viewer, p_scope, p_limit)` RPC (migration `20251122170000_leaderboard.sql`). It returns public fields only (handle, display name, points, pet count).
+
+**Tiger (optional later):** weekly board from continuous aggregates; not required for MVP.
+
+--- | --- |
 | **Collectors** | Distinct `pet_id` count (unique slots) |
 | **Gold** | Count of `user_pets` where `is_gold` |
 | **Scans** | Total scans (`my_stats.total_scans` or `count(scans)`) |
@@ -243,13 +285,13 @@ Profiles, search and follows go through a third Edge Function, `social`. Two sma
 
 - `profiles(id, display_name, handle, is_demo, created_at, last_active_at)`: created by a trigger on sign-up, which copies `display_name` and `handle` from the sign-up metadata. `handle` is unique and must match `^[a-z0-9_]{3,20}$`. Clients may update only `display_name`.
 - `scan_codes`, `user_pets(user_id, pet_id, copies, …)` — PK `(user_id, pet_id)`
-- `scans` — one row per draw; `pet_id`, `code_line` (station line for stats)
-- `record_scan(p_user_id, p_code_id, p_pet_id, p_is_gold, p_cooldown_hours)`, `my_stats(...)` — service role via Edge Functions
+- `scans` — one row per draw; `pet_id`, `code_line` (station line for stats), `points` (leaderboard points that scan earned)
+- `record_scan(...)`, `my_stats(p_user_id)` (scans, lines visited, points), `leaderboard(p_viewer, p_scope, p_limit)` — service role via Edge Functions
 - `handle_available(p_handle)`, `touch_last_active()` — security-definer RPCs the app calls directly
 - `follows(follower_id, followee_id, created_at)`: PK (follower, followee), with a check that you can't follow yourself. RLS on with no policies: written and read only through `social`.
 - `user_summaries(p_viewer, p_ids)`, `search_users(p_viewer, p_prefix)` — service-role helpers for `social`
 
-Migrations: `20251121220000_pet_id.sql` (collection keyed by `pet_id`), `20251122130000_profile_social.sql` (handle, timestamps, RPCs), `20251122140000_follows.sql` (follows + social helpers), `20251122150000_search_display_name.sql` (search by display name). Skeleton ids: `{line}_{species}`.
+Migrations: `20251121220000_pet_id.sql` (collection keyed by `pet_id`), `20251122130000_profile_social.sql` (handle, timestamps, RPCs), `20251122140000_follows.sql` (follows + social helpers), `20251122150000_search_display_name.sql` (search by display name), `20251122170000_leaderboard.sql` (`scans.points` + backfill, points in `record_scan` / `my_stats`, `leaderboard` RPC). Skeleton ids: `{line}_{species}`.
 
 Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.ts`, not Postgres enums for pets.
 
@@ -262,7 +304,7 @@ Enums: `t_line` on `scan_codes` / `code_line`; roll metadata lives in `catalog.t
 
 ### Planned (MVP — not in DB yet)
 
-- Leaderboards: no new tables — aggregate `user_pets` / `scans` via RPC or views.
+- Leaderboards: no new tables. `record_scan` stores `scans.points` (it gets the new and duplicate values from `scan` and decides new-pet and daily bonus itself); the `leaderboard` RPC sums them.
 
 Tiger mirror: [tiger/README.md](tiger/README.md).
 

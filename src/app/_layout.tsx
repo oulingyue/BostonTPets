@@ -1,13 +1,17 @@
+import { Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, useFonts } from '@expo-google-fonts/nunito';
+import { PixelifySans_500Medium, PixelifySans_700Bold } from '@expo-google-fonts/pixelify-sans';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import { AppHeader } from '@/components/ui/AppHeader';
 import { SessionProvider, useSession } from '@/lib/session';
-import { colors } from '@/theme';
+import { usePalette } from '@/theme';
 
 export default function RootLayout() {
+  // The header is navy in both day and night, so the status bar text stays light.
   return (
     <SessionProvider>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <RootNavigator />
     </SessionProvider>
   );
@@ -15,11 +19,20 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { session, isLoading } = useSession();
+  const c = usePalette();
+  const [fontsLoaded, fontError] = useFonts({
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    PixelifySans_500Medium,
+    PixelifySans_700Bold,
+  });
 
-  if (isLoading) {
+  // If the fonts fail to load, carry on with the system font rather than hang.
+  if (isLoading || (!fontsLoaded && !fontError)) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background }}>
+        <ActivityIndicator color={c.text} />
       </View>
     );
   }
@@ -29,17 +42,20 @@ function RootNavigator() {
   return (
     <Stack
       screenOptions={{
-        contentStyle: { backgroundColor: colors.background },
-        // iOS 26 makes the header transparent by default, so screens slide under it. A solid
-        // header (matching the tab headers) keeps content below it on every pushed screen.
-        headerTransparent: false,
-        headerStyle: { backgroundColor: colors.background },
-        // Otherwise iOS labels the back button with the previous route's name, e.g. "(tabs)".
-        headerBackButtonDisplayMode: 'minimal',
+        contentStyle: { backgroundColor: c.background },
+        header: ({ options, back, navigation }) => (
+          <AppHeader
+            title={typeof options.title === 'string' ? options.title : ''}
+            onBack={back ? navigation.goBack : undefined}
+            right={options.headerRight?.({ canGoBack: !!back, tintColor: c.signText })}
+            skipTopInset={options.presentation === 'modal'}
+          />
+        ),
       }}
     >
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="habitat/[zone]" options={{ presentation: 'modal', title: 'Equip a pet' }} />
         <Stack.Screen name="species/[species]" options={{ title: '' }} />
         <Stack.Screen name="friends/search" options={{ title: 'Add friends' }} />
         <Stack.Screen name="user/[handle]/index" options={{ title: '' }} />
