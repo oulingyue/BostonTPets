@@ -87,13 +87,17 @@ Grafana Cloud's free tier works and can be opened on any laptop or projector.
    CREATE ROLE grafana_reader LOGIN PASSWORD '<another password>';
    GRANT USAGE ON SCHEMA public TO grafana_reader;
    GRANT SELECT ON ALL TABLES IN SCHEMA public TO grafana_reader;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO grafana_reader;
    ```
-2. In Grafana add a **PostgreSQL** data source: host `<tiger-host>:<port>` from your Tiger connection
-   string, database `tsdb`, user `grafana_reader`, **TLS/SSL mode `require`** (Tiger's certificate comes
-   from a private CA), and turn on **TimescaleDB**.
-3. Add a dashboard variable: **Custom**, name `source`, values `live,simulated`, **Multi-value** on.
-4. Add one panel per query in [dashboard.sql](dashboard.sql); each query's header says which panel type
-   to use.
+2. In Grafana, go to **Connections → Add new connection → PostgreSQL → Add new data source**:
+   host `<tiger-host>:<port>` from your Tiger connection string, database `tsdb`, user
+   `grafana_reader`, **TLS/SSL mode `require`** (Tiger's certificate comes from a private CA), and turn
+   on **TimescaleDB**. Click **Save & test**.
+3. Go to **Dashboards → New → Import**, upload [grafana-dashboard.json](grafana-dashboard.json), and pick
+   that data source.
+
+The dashboard is built from [dashboard.sql](dashboard.sql): after editing a query, run
+`npm run tiger:dashboard` and import the JSON again.
 
 ## Changing the catalog
 

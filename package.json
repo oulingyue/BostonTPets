@@ -47,7 +47,8 @@
     "lint": "expo lint",
     "sfx": "node scripts/sfx/generate.mjs",
     "pets": "node scripts/pixel-pets/generate.mjs",
-    "tiger:pets": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tiger/generate-pets.mjs"
+    "tiger:pets": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/tiger/generate-pets.mjs",
+    "tiger:dashboard": "node scripts/tiger/grafana-dashboard.mjs"
   },
   "private": true
 }

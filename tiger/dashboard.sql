@@ -1,4 +1,5 @@
 -- Grafana panel queries for the Tiger dashboard. Setup: tiger/README.md.
+-- npm run tiger:dashboard builds tiger/grafana-dashboard.json from this file; re-run it after editing.
 -- Each panel uses the Grafana variable $source (multi-value, options: live, simulated) so you can show
 -- real scans only, or real + simulated. $__timeFilter() is Grafana's time-range macro.
 
@@ -18,7 +19,7 @@ ORDER BY scans DESC
 LIMIT 10;
 
 -- name: Rush-hour profile, average scans per hour of day in Boston (bar chart)
-SELECT extract(hour FROM bucket AT TIME ZONE 'America/New_York')::int AS hour,
+SELECT lpad(extract(hour FROM bucket AT TIME ZONE 'America/New_York')::int::text, 2, '0') || ':00' AS hour,
        round(avg(scans) FILTER (WHERE extract(isodow FROM bucket AT TIME ZONE 'America/New_York') <= 5), 1) AS weekday,
        round(avg(scans) FILTER (WHERE extract(isodow FROM bucket AT TIME ZONE 'America/New_York') > 5), 1) AS weekend
 FROM (
@@ -51,7 +52,7 @@ ORDER BY created_at DESC
 LIMIT 10;
 
 -- name: Columnstore savings (stat)
-SELECT pg_size_pretty(before_compression_total_bytes) AS before,
-       pg_size_pretty(after_compression_total_bytes) AS after,
-       round(before_compression_total_bytes::numeric / nullif(after_compression_total_bytes, 0), 1) AS ratio
+SELECT before_compression_total_bytes AS "Before",
+       after_compression_total_bytes AS "After",
+       round(before_compression_total_bytes::numeric / nullif(after_compression_total_bytes, 0), 1) AS "Smaller by"
 FROM hypertable_columnstore_stats('scans');
