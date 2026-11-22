@@ -76,7 +76,7 @@ export default function CollectionScreen() {
       >
         <View style={styles.stats}>
           <Stat value={`${ownedCount}/${TOTAL_PETS}`} label="Collected" />
-          <Stat value={`${golds}`} label="Gold ✨" />
+          <Stat value={`${golds}`} label="Rainbow 🌈" />
           <Stat value={`${legendariesOwned}/${LEGENDARY_IDS.length}`} label="Legendary" />
           <Stat value={`${linesFound}/${LINES.length}`} label="Lines" />
         </View>

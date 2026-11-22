@@ -1,10 +1,11 @@
-import { getPet, GOLD_COLOR, type Rarity } from '@game/catalog';
+import { getPet, type Rarity } from '@game/catalog';
 import { levelFor } from '@game/leveling';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ExpBar } from '@/components/ExpBar';
 import { PetBadge } from '@/components/PetBadge';
+import { RainbowTag } from '@/components/Rainbow';
 import { Stars } from '@/components/Stars';
 import { fetchMyPets } from '@/lib/api';
 import { playSfx } from '@/lib/sfx';
@@ -18,7 +19,7 @@ export default function SpeciesDetail() {
   const { data: pets, loading } = useFocusedData(fetchMyPets);
   const info = petId ? getPet(petId) : undefined;
 
-  // Opening sound, once per visit: a chirp for a pet you own (plus a twinkle for legendaries and gold
+  // Opening sound, once per visit: a chirp for a pet you own (plus a twinkle for legendaries and rainbow
   // pets), a muted blip for one you haven't found.
   const playedFor = useRef<string | null>(null);
   useEffect(() => {
@@ -48,10 +49,10 @@ export default function SpeciesDetail() {
       </View>
       <View style={styles.row}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={[styles.petName, !owned && { color: colors.muted }]}>
-            {info.name}
-            {owned?.is_gold && <Text style={styles.goldTag}> GOLD </Text>}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={[styles.petName, !owned && { color: colors.muted }]}>{info.name}</Text>
+            {owned?.is_gold && <RainbowTag size="sm" />}
+          </View>
           {owned ? (
             <>
               <Stars copies={owned.copies} level={levelFor(owned.copies, info.rarity).level} />
@@ -86,7 +87,7 @@ function ExpBarFor({ copies, rarity }: { copies: number; rarity: Rarity }) {
 }
 
 const styles = StyleSheet.create({
-  goldTag: { backgroundColor: GOLD_COLOR, color: '#3a2a00', fontSize: 12, fontWeight: '900' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   exp: { maxWidth: 260, marginVertical: 4 },
   container: { padding: spacing.md, gap: spacing.sm },
   hero: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },

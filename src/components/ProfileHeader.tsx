@@ -29,7 +29,7 @@ export function ProfileHeader(p: Props) {
   const gold = p.pets.filter((x) => x.is_gold).length;
   const tiles = [
     { label: 'Collected', value: String(p.pets.length) },
-    { label: 'Gold pets', value: String(gold) },
+    { label: 'Rainbow pets', value: String(gold) },
     { label: 'Scans', value: String(p.stats.total_scans) },
   ];
 

@@ -1,8 +1,9 @@
-import { getPet, GOLD_COLOR, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
+import { getPet, levelFromCopies, LINE_INFO, MAX_LEVEL } from '@game/catalog';
 import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PetBadge } from '@/components/PetBadge';
+import { RainbowTag } from '@/components/Rainbow';
 import { Stars } from '@/components/Stars';
 import type { PublicPet } from '@/lib/api';
 import { playSfx } from '@/lib/sfx';
@@ -57,7 +58,7 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
               {LINE_INFO[line].name}
             </Text>
           )}
-          {pet.is_gold && <Text style={[styles.chip, styles.goldChip]}>★ Gold</Text>}
+          {pet.is_gold && <RainbowTag size="sm" label="RAINBOW" />}
         </View>
       </View>
 
@@ -82,7 +83,7 @@ function SheetBody({ pet, onClose, bottomInset }: { pet: PublicPet; onClose: () 
 
       <View style={styles.facts}>
         <Fact label="First caught" value={formatDate(pet.first_caught_at)} />
-        <Fact label="Gold" value={pet.is_gold ? 'Yes' : 'Not yet'} />
+        <Fact label="Rainbow" value={pet.is_gold ? 'Yes' : 'Not yet'} />
       </View>
 
       <Pressable style={({ pressed }) => [styles.done, pressed && { opacity: 0.85 }]} onPress={onClose} accessibilityRole="button">
@@ -114,8 +115,7 @@ const styles = StyleSheet.create({
   grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.locked },
   hero: { alignItems: 'center', gap: 10 },
   title: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  goldChip: { backgroundColor: GOLD_COLOR, color: '#3a2a00' },
+  chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 3,

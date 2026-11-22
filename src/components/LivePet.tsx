@@ -23,13 +23,15 @@ type Props = {
   size: number;
   /** Idle motion runs only while active (e.g. after a reveal finishes). */
   active?: boolean;
+  /** The rainbow variant: colors cycle through the rainbow. */
+  rainbow?: boolean;
 };
 
 /**
  * A pet that feels alive: a slow breathing bob, random blinks (when the art has a blink frame),
  * and a hop with a haptic when tapped. Reduced-motion users get a still pet that still blinks.
  */
-export function LivePet({ id, name, emoji, size, active = true }: Props) {
+export function LivePet({ id, name, emoji, size, active = true, rainbow = false }: Props) {
   const reduceMotion = useReducedMotion();
   const breath = useSharedValue(0);
   const hop = useSharedValue(0);
@@ -79,7 +81,7 @@ export function LivePet({ id, name, emoji, size, active = true }: Props) {
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Pet the ${name}`}>
       <Animated.View style={[{ transformOrigin: 'center bottom' }, style]}>
-        <PetSprite id={id} emoji={emoji} size={size} blinking={blinking} />
+        <PetSprite id={id} emoji={emoji} size={size} blinking={blinking} rainbow={rainbow} />
       </Animated.View>
     </Pressable>
   );

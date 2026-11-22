@@ -17,7 +17,7 @@ const CIRCLE = 56;
 
 /**
  * One cell of the collection grid: the pet's badge, name and rarity.
- * Gold pets get PetBadge's gold ring, GOLD stamp, and shine.
+ * Rainbow pets (is_gold) cycle through the rainbow and get PetBadge's RAINBOW stamp.
  * Pets the player hasn't found show as a silhouette named "???".
  */
 export function CreatureBadge({ petId, owned, width, onPress }: Props) {
