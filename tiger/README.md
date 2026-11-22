@@ -65,7 +65,8 @@ Run the SQL in the Tiger console's SQL editor (or `psql`), in this order. Never 
    ```
    The pooler needs the `.<project-ref>` suffix on the user name. Then start the job:
    ```sql
-   SELECT add_job('sync_from_supabase', INTERVAL '1 minute');
+   SELECT add_job('sync_from_supabase', INTERVAL '1 minute')
+   WHERE NOT EXISTS (SELECT 1 FROM timescaledb_information.jobs WHERE proc_name = 'sync_from_supabase');
    ```
 5. **Tiger: simulated history (optional).** Run [seeds/simulate.sql](seeds/simulate.sql), then the
    refresh and compression lines at the bottom of that file, each on its own.
