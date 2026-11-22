@@ -47,3 +47,7 @@ supabase/.branches/
 # Cursor / Expo agent skills (local tooling, not part of the app)
 .agents/
 skills-lock.json
+
+# Downloaded font archives, and a font whose license forbids redistribution (kept local only)
+assets/fonts/*.zip
+assets/fonts/pixel/

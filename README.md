@@ -84,6 +84,10 @@ Runs the whole app in the browser on sample data, with no Supabase project and n
 
 Open `/dev/reveal`, or tap **Reveal playground** at the bottom of the Profile tab. It's available in every build, including production, so you can show it on any phone. Pick any line and creature from the catalog, choose what the pull does (new pet, duplicate, level up, max level), toggle gold, roll a random pull with the real odds and pity, and replay at 1×, ½× or ¼× speed. Every save replays the reveal. The reveal lives in `src/components/reveal/`: timings are `T`, rarity colors are `RARITY_COLOR`, and the pixel sprites are in `sprites.ts`.
 
+### Font picker
+
+Open `/dev/fonts`, or tap **Font picker** at the bottom of the Profile tab (every build, like the reveal playground). Each card previews a font; tap one to use it for titles, headings and numbers, or switch to **All text** to replace Nunito too. The choice is saved on the device and the app reloads to apply it. Pixelify Sans is the default. The fonts are listed in `src/lib/fontChoice.ts` and live in `assets/fonts/`, each with its license or readme. The repo is public, so check a font's license before adding one: a font that forbids redistribution can't go in (that's why "Pixel" isn't included).
+
 ### Sound effects
 
 The reveal, level-ups, tapping your pet, and opening pets in the collection all play 8-bit sound effects (`src/lib/sfx.ts`). They mix with the player's music and play even when the phone is on silent or vibrate (they use the media volume). The sounds are synthesized by `scripts/sfx/generate.mjs`, so they're original and license-free: edit a recipe there and run `npm run sfx` to regenerate `assets/sfx/`.

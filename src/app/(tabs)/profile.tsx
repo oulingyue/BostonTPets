@@ -133,6 +133,9 @@ export default function ProfileScreen() {
         <Link href="/dev/reveal" style={styles.devLink}>
           Reveal playground
         </Link>
+        <Link href="/dev/fonts" style={styles.devLink}>
+          Font picker
+        </Link>
       </ScrollView>
 
       <PetSheet

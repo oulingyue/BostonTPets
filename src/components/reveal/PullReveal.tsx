@@ -1,6 +1,6 @@
-import { PixelifySans_500Medium, PixelifySans_700Bold, useFonts } from '@expo-google-fonts/pixelify-sans';
 import { GOLD_COLOR, LINE_INFO, type Line, type Rarity } from '@game/catalog';
 import { EXP_TO_NEXT, LEVEL_CAP, pullProgress, type LevelState } from '@game/leveling';
+import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -27,8 +27,10 @@ import Animated, {
   type EasingFunction,
   type SharedValue,
 } from 'react-native-reanimated';
+import { activeFontMap } from '@/lib/fontChoice';
 import { haptics } from '@/lib/haptics';
 import { playSfx, preloadSfx, TIER_SFX } from '@/lib/sfx';
+import { fonts } from '@/theme';
 import { ExpBar } from '../ExpBar';
 import { LivePet } from '../LivePet';
 import { RAINBOW, RainbowTag } from '../Rainbow';
@@ -211,7 +213,7 @@ let hasSeenFullReveal = false;
 export function PullReveal({ pet, line, stationName, copies, isNew, points, onDone, timeScale = 1 }: Props) {
   const reduceMotion = useReducedMotion();
   const screen = useWindowDimensions();
-  const [fontsLoaded] = useFonts({ PixelifySans_500Medium, PixelifySans_700Bold });
+  const [fontsLoaded] = useFonts(activeFontMap);
   const pixelFont = fontsLoaded ? styles.pixelFont : null;
   const pixelFontBold = fontsLoaded ? styles.pixelFontBold : null;
 
@@ -1149,8 +1151,8 @@ const styles = StyleSheet.create({
   scene: { flex: 1, overflow: 'hidden' },
   abs: { position: 'absolute' },
   noTouch: { pointerEvents: 'none' },
-  pixelFont: { fontFamily: 'PixelifySans_500Medium', fontWeight: 'normal' },
-  pixelFontBold: { fontFamily: 'PixelifySans_700Bold', fontWeight: 'normal' },
+  pixelFont: { fontFamily: fonts.pixel, fontWeight: 'normal' },
+  pixelFontBold: { fontFamily: fonts.pixelBold, fontWeight: 'normal' },
 
   signWrap: { top: 18, left: 0, right: 0, alignItems: 'center', gap: 12 },
   sign: {

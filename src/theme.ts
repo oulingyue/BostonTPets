@@ -5,6 +5,7 @@
 // `useStyles(makeStyles)`, so every screen switches between day and night with the phone.
 import { useMemo } from 'react';
 import { useColorScheme, type TextStyle } from 'react-native';
+import { fontChoice, pixelFamilies } from '@/lib/fontChoice';
 
 export type Palette = {
   scheme: 'light' | 'dark';
@@ -121,14 +122,15 @@ export function useStyles<T>(factory: (c: Palette) => T): T {
 
 /**
  * Font families, one per weight (custom fonts ignore fontWeight on iOS and Android).
- * Loaded in src/app/_layout.tsx.
+ * Loaded in src/app/_layout.tsx. The pixel font is Pixelify Sans unless another is picked at /dev/fonts,
+ * which can also use it in place of Nunito (src/lib/fontChoice.ts).
  */
 export const fonts = {
-  body: 'Nunito_600SemiBold',
-  bold: 'Nunito_700Bold',
-  heavy: 'Nunito_800ExtraBold',
-  pixel: 'PixelifySans_500Medium',
-  pixelBold: 'PixelifySans_700Bold',
+  body: fontChoice.everywhere ? pixelFamilies.regular : 'Nunito_600SemiBold',
+  bold: fontChoice.everywhere ? pixelFamilies.bold : 'Nunito_700Bold',
+  heavy: fontChoice.everywhere ? pixelFamilies.bold : 'Nunito_800ExtraBold',
+  pixel: pixelFamilies.regular,
+  pixelBold: pixelFamilies.bold,
 } as const;
 
 /** Text style shortcuts. */

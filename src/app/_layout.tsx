@@ -1,9 +1,9 @@
 import { Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, useFonts } from '@expo-google-fonts/nunito';
-import { PixelifySans_500Medium, PixelifySans_700Bold } from '@expo-google-fonts/pixelify-sans';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { AppHeader } from '@/components/ui/AppHeader';
+import { activeFontMap } from '@/lib/fontChoice';
 import { SessionProvider, useSession } from '@/lib/session';
 import { usePalette } from '@/theme';
 
@@ -24,8 +24,7 @@ function RootNavigator() {
     Nunito_600SemiBold,
     Nunito_700Bold,
     Nunito_800ExtraBold,
-    PixelifySans_500Medium,
-    PixelifySans_700Bold,
+    ...activeFontMap, // the pixel font: Pixelify Sans unless another is picked at /dev/fonts
   });
 
   // If the fonts fail to load, carry on with the system font rather than hang.
