@@ -20,10 +20,10 @@ export default function LeaderboardScreen() {
   const [infoOpen, setInfoOpen] = useState(false);
   const navigation = useNavigation();
 
-  // ⓘ in the header's top-left opens the points rules.
+  // ⓘ in the header's top-right opens the points rules.
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
+      headerRight: () => (
         <Pressable
           onPress={() => setInfoOpen(true)}
           style={({ pressed }) => [styles.infoButton, pressed && { opacity: 0.6 }]}
@@ -131,8 +131,7 @@ const styles = StyleSheet.create({
   error: { color: colors.danger, textAlign: 'center' },
   empty: { textAlign: 'center', color: colors.muted, padding: spacing.md },
   infoButton: {
-    marginLeft: spacing.md,
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
     width: 28,
     height: 28,
     borderRadius: 14,
