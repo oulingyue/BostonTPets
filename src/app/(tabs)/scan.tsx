@@ -10,13 +10,14 @@ import { LineStripe } from '@/components/ui/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { submitScan } from '@/lib/api';
 import { IS_PREVIEW, PREVIEW_CODE } from '@/lib/preview';
+import { formatDistance, useScanLocation } from '@/lib/scanLocation';
 import { cardStyle, fonts, spacing, useStyles, type Palette } from '@/theme';
 
 type ScanState =
   | { kind: 'scanning' }
   | { kind: 'submitting' }
   | { kind: 'result'; result: Extract<ScanResponse, { status: 'ok' }> }
-  | { kind: 'message'; title: string; body: string };
+  | { kind: 'message'; title: string; body: string; action?: { title: string; onPress: () => void } };
 
 export default function ScanScreen() {
   const styles = useStyles(makeStyles);
@@ -27,6 +28,8 @@ export default function ScanScreen() {
   const locked = useRef(false);
   // Only one camera preview may be mounted at a time, so unmount it when the tab loses focus.
   const isFocused = useIsFocused();
+  // Codes with a location only count near the station. The scan function checks; this supplies the position.
+  const scanLocation = useScanLocation(isFocused && !IS_PREVIEW && permission?.granted === true);
 
   function reset() {
     locked.current = false;
@@ -44,7 +47,8 @@ export default function ScanScreen() {
 
     setState({ kind: 'submitting' });
     try {
-      const res = await submitScan(data);
+      const { location, access } = IS_PREVIEW ? { location: null, access: 'granted' } : await scanLocation.getLocation();
+      const res = await submitScan(data, location);
       if (res.status === 'ok') setState({ kind: 'result', result: res });
       else if (res.status === 'cooldown') {
         setState({
@@ -52,6 +56,36 @@ export default function ScanScreen() {
           title: 'Train already left 🚋',
           body: `You've scanned ${res.stationName} recently. Next departure in ${timeUntil(res.nextAvailableAt)}.`,
         });
+      } else if (res.status === 'too_far') {
+        setState(
+          access === 'approximate'
+            ? {
+                kind: 'message',
+                title: 'Wrong stop? 📍',
+                body: `This code is at ${res.stationName}, but your phone is only sharing an approximate location. Turn on Precise Location for BostonTPets, then scan again.`,
+                action: { title: 'Open Settings', onPress: scanLocation.fixAccess },
+              }
+            : {
+                kind: 'message',
+                title: 'Wrong stop 📍',
+                body: `This code is at ${res.stationName}, and your phone puts you ${formatDistance(res.distanceM)} away. Scan it at the station to catch a pet.`,
+              },
+        );
+      } else if (res.status === 'location_required') {
+        setState(
+          access === 'ask' || access === 'denied'
+            ? {
+                kind: 'message',
+                title: 'Location needed 📍',
+                body: `Pets only show up for riders at the station. Let BostonTPets see your location to scan at ${res.stationName}.`,
+                action: { title: access === 'ask' ? 'Allow location' : 'Open Settings', onPress: scanLocation.fixAccess },
+              }
+            : {
+                kind: 'message',
+                title: 'Can’t find you 📍',
+                body: 'Your phone couldn’t work out where you are. Check that Location is on, head toward the station entrance, and try again.',
+              },
+        );
       } else {
         setState({ kind: 'message', title: 'Code not recognized', body: 'This code is no longer in service.' });
       }
@@ -135,6 +169,7 @@ export default function ScanScreen() {
             <View style={styles.card}>
               <Text style={styles.title}>{state.title}</Text>
               <Text style={styles.body}>{state.body}</Text>
+              {state.action && <Button title={state.action.title} onPress={state.action.onPress} style={styles.cardButton} />}
               <Button title="Scan again" variant="strong" onPress={reset} style={styles.cardButton} />
             </View>
           )}

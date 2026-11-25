@@ -96,11 +96,17 @@ npx supabase functions deploy scan player social
 
 Deploy the functions right after `db push`: the leaderboard migration changes `record_scan`'s parameters, so the old `scan` function and the new database (or the other way round) can't record scans.
 
+### Location check
+
+A scan only counts within `radius_m` (250 m by default) of its code (rules in [DESIGN.md](DESIGN.md#scan-limits-and-code-integrity)). Every station code is set to its station's center from the MBTA API by [20261124130000_scan_code_locations.sql](supabase/migrations/20261124130000_scan_code_locations.sql), which also adds a Jackson Square code. If a poster hangs far from its station's center, give that code the poster's own coordinates in a new migration. A code with no coordinates skips the check. Each refusal is logged by the `scan` function with its distance and the phone's accuracy (never coordinates), which helps tune `radius_m`.
+
+Demo accounts (`profiles.is_demo`) skip the check, so use one to test away from the stations. The iOS Simulator reports mock locations, which are refused for other accounts.
+
 Tiger (hypertable / prize demo): [tiger/README.md](tiger/README.md) — analytics copy, not required for the app to run.
 
 ## Checks
 
 ```sh
 npm run typecheck   # tsc --noEmit
-npm run test:game   # roll odds, QR payload parsing, leveling (node:test)
+npm run test:game   # roll odds, QR payload parsing, leveling, location rules (node:test)
 ```

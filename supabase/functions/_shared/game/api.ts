@@ -1,7 +1,9 @@
 // Request/response contract for the `scan` Edge Function. Types only.
 import type { Line } from './catalog.ts';
+import type { ScanLocation } from './location.ts';
 
-export type ScanRequest = { payload: string };
+/** `location` is required for codes that have coordinates (rules in location.ts). */
+export type ScanRequest = { payload: string; location?: ScanLocation };
 
 export type ScanResponse =
   | {
@@ -17,4 +19,8 @@ export type ScanResponse =
       points: { total: number; dailyBonus: number };
     }
   | { status: 'cooldown'; stationName: string; nextAvailableAt: string }
+  /** The phone is farther from the code than its radius allows. */
+  | { status: 'too_far'; stationName: string; distanceM: number }
+  /** The code has coordinates, but the scan came with no location, or a mocked one. */
+  | { status: 'location_required'; stationName: string }
   | { status: 'invalid_code' };

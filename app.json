@@ -34,7 +34,15 @@
         }
       ],
       "expo-font",
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "BostonTPets checks your location when you scan a code, to make sure you're at that station.",
+          "locationAlwaysAndWhenInUsePermission": "BostonTPets checks your location when you scan a code, to make sure you're at that station.",
+          "motionUsagePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

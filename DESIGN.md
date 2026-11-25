@@ -144,6 +144,7 @@ Never create a second collection row for the same `pet_id`.
 ## Scan limits and code integrity
 
 - **Per-code cooldown:** one scan per user per code every **24 h** (skipped when `profiles.is_demo`).
+- **Location check:** a code with coordinates (`scan_codes.lat`, `lng`, `radius_m`, default **250 m**) only counts if the phone is within the radius. The phone's reported accuracy adds up to **150 m** of slack, since GPS fails underground. Mock locations are refused. Codes without coordinates skip the check, and so do demo accounts. Rules: `_shared/game/location.ts`. The phone reports its own position, so this stops casual cheating, not someone who forges API requests.
 - **Payload:** `btp:<32 hex>` — opaque ID; station is resolved server-side from `scan_codes`.
 - **Transfer stations:** one code per line (e.g. Park Street Red vs Green).
 - **Placement:** hackathon poster; later partners near stations. In-station stickers need MBTA permission.
@@ -183,7 +184,11 @@ Camera + reticle; unmount when tab blurs.
 
 - Success → fare-gate reveal (a CharlieCard taps, the gate light shows the rarity color or gold, the gates open, the pet springs in; NEW! / TURNED GOLD! as needed).
 - Cooldown → "Train already left 🚋 … next departure in Xh Ym".
+- Too far from the code → "Wrong stop 📍 … your phone puts you 2.3 mi away" (with Open Settings if only approximate location is shared).
+- No location for a located code → "Location needed 📍" + Allow location / Open Settings, or "Can't find you 📍" if location is on but no fix came.
 - Invalid / inactive code / offline → message + Scan again.
+
+The app asks for location ("while using") the first time a scan needs it, and keeps a fresh fix while the Scan tab is open.
 
 ### Profile
 
@@ -333,7 +338,7 @@ The 35-pet catalog and pity are in the repo. Following + leaderboards stay **in 
 
 ## Out of scope (for now)
 
-Apple/Google sign-in, offline scan queue, GPS or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, seasonal leaderboard resets.
+Apple/Google sign-in, offline scan queue, app attestation (App Attest / Play Integrity) or vision verification, production art pipeline, in-station deployment without partners, **trading or gifting** pets, chat/DMs, seasonal leaderboard resets.
 
 **In MVP scope (design only until built):** leaderboards (collectors / gold / scans). Pity and the 35-pet roster are implemented in the roll; collection layout can still trail.
 

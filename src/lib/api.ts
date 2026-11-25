@@ -1,4 +1,5 @@
-import type { ScanResponse } from '@game/api';
+import type { ScanRequest, ScanResponse } from '@game/api';
+import type { ScanLocation } from '@game/location';
 import { IS_PREVIEW, previewData, previewLeaderboard, previewSocial } from './preview';
 import { supabase } from './supabase';
 
@@ -110,9 +111,11 @@ export async function fetchLeaderboard(scope: LeaderboardScope): Promise<Leaderb
 }
 
 /** Sends the raw QR payload to the server, which validates it and rolls the pet. */
-export async function submitScan(payload: string): Promise<ScanResponse> {
+/** `location`: the phone's position, or null if there is none (the scan function decides whether that's OK). */
+export async function submitScan(payload: string, location: ScanLocation | null): Promise<ScanResponse> {
   if (IS_PREVIEW) return previewData.scan();
-  const { data, error } = await supabase.functions.invoke<ScanResponse>('scan', { body: { payload } });
+  const body: ScanRequest = location ? { payload, location } : { payload };
+  const { data, error } = await supabase.functions.invoke<ScanResponse>('scan', { body });
   if (error || !data) throw error ?? new Error('Empty response from scan function');
   return data;
 }
